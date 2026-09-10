@@ -1480,12 +1480,25 @@ function syncDesktopSidebar() {
   if (overlay) overlay.classList.add('hidden');
   document.body.classList.remove('sidebar-open');
   document.body.style.overflow = '';
-  // Desktop uses a stable full sidebar — no hover expand state
-  document.body.classList.remove('sidebar-expanded');
+  // Keep collapsed by default; hover expand is handled separately.
+  // Only clear expand when on landing (sidebar must stay hidden).
+  if (document.body.classList.contains('on-landing')) {
+    document.body.classList.remove('sidebar-expanded');
+  }
 }
 
 function initSidebarHoverExpand() {
-  // No-op: hover icon-rail expand caused overflowing nav pills on some laptops.
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar || sidebar.dataset.hoverBound === '1') return;
+  sidebar.dataset.hoverBound = '1';
+  sidebar.addEventListener('mouseenter', function () {
+    if (isDesktopSidebar() && !document.body.classList.contains('on-landing')) {
+      document.body.classList.add('sidebar-expanded');
+    }
+  });
+  sidebar.addEventListener('mouseleave', function () {
+    document.body.classList.remove('sidebar-expanded');
+  });
 }
 
 function toggleSidebar(e) {
