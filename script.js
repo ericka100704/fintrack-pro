@@ -192,11 +192,7 @@ const ACCOUNT_SYSTEM = {
         { id: 2, desc: 'PhilHealth', amount: 100000, monthly: 800, policyType: 'Health', date: addDays(-60) },
         { id: 3, desc: 'Life Cover', amount: 150000, monthly: 1200, policyType: 'Life', date: addDays(-90) }
       ],
-      goals: [
-        { id: 1, desc: 'Emergency Fund (6 Months)', current: 4500, target: 12000, monthly: 1500, dueDate: addDays(90) },
-        { id: 2, desc: 'Gravel Bike Upgrade', current: 3000, target: 10000, monthly: 800, dueDate: addDays(120) },
-        { id: 3, desc: 'New Laptop', current: 8000, target: 45000, monthly: 2500, dueDate: addDays(200) }
-      ],
+      goals: [],
       settings: {
         currency: 'PHP',
         budgetLimit: 15000,
@@ -210,7 +206,7 @@ const ACCOUNT_SYSTEM = {
   }
 };
 
-const VIEWS = ['welcome', 'dashboard', 'income', 'spending', 'savings', 'investment', 'protection', 'goals', 'analytics', 'calculator', 'settings'];
+const VIEWS = ['welcome', 'dashboard', 'income', 'spending', 'savings', 'investment', 'protection', 'analytics', 'calculator', 'settings'];
 const THEME_PRESETS = [
   { id: 'soft', label: 'Soft', gradient: 'linear-gradient(135deg,#B46A72,#F7C8D3)', colors: ['#B46A72', '#F7C8D3', '#A8B58A'] },
   { id: 'rosewood', label: 'Rosewood', gradient: 'linear-gradient(135deg,#8E3B45,#2D3A47)', colors: ['#8E3B45', '#C48B93', '#2D3A47'] },
@@ -226,14 +222,14 @@ const TUTORIAL_STEPS = [
   { title: 'Savings', body: 'This is Savings — build reserves, mark Emergency Fund accounts, and track monthly contributions.', view: 'savings' },
   { title: 'Investments', body: 'This is the Investment page — track Stocks/Funds, Business, Bonds, Property, or Other assets.', view: 'investment' },
   { title: 'Protection', body: 'You are on Protection — add Health, Life, Property, Insurance, and Emergency Fund coverage for your safety net score.', view: 'protection' },
-  { title: 'Goals', body: 'This is Goals — set targets with due dates and monthly contributions. Progress bars show how close you are.', view: 'goals' },
+  { title: 'Analytics', body: 'This is Analytics — see trends, allocation, and your financial health score across pillars.', view: 'analytics' },
   { title: 'Financial Health', body: 'Back on Dashboard — your Health Score /100 averages five pillar scores so you always know the next best money move.', view: 'dashboard' }
 ];
 
 const ACHIEVEMENTS = [
   { id: 'first_income', title: 'First Peso In', desc: 'Logged your first income.', emoji: '💰', test: (s) => s.income.length >= 1 },
   { id: 'first_spend', title: 'Aware Spender', desc: 'Tracked your first expense.', emoji: '🧾', test: (s) => s.expenses.length >= 1 },
-  { id: 'goal_50', title: 'Halfway Hero', desc: 'Reached 50% on a goal.', emoji: '🎯', test: (s) => s.goals.some(g => g.target > 0 && (g.current / g.target) >= 0.5) },
+  { id: 'goal_50', title: 'Halfway Hero', desc: 'Reached 50% on a savings goal.', emoji: '🎯', test: (s) => (s.savings || []).some(g => !g.isCompleted && Number(g.target) > 0 && (Number(g.amount) / Number(g.target)) >= 0.5) },
   { id: 'savings_20', title: 'Saver Streak', desc: 'Savings rate above 20%.', emoji: '🐷', test: (s) => { const inc = sum(s.income); return inc > 0 && (sum(s.savings) / inc) > 0.2; } },
   { id: 'protected', title: 'Safety Net', desc: 'Added protection coverage.', emoji: '🛡️', test: (s) => s.protection.length >= 1 },
   { id: 'investor', title: 'Seed Investor', desc: 'Added an investment.', emoji: '📈', test: (s) => s.investments.length >= 1 }
@@ -423,8 +419,7 @@ function hasFinancialData() {
     || state.expenses.length > 0
     || state.savings.length > 0
     || state.investments.length > 0
-    || state.protection.length > 0
-    || state.goals.length > 0;
+    || state.protection.length > 0;
 }
 
 /** Encouraging 6-month projected net-worth series from current assets + surplus. */
@@ -602,7 +597,7 @@ function nextBestAction() {
   if (t.efMonths < 1) return 'Start or grow an Emergency Fund (Savings or Protection) toward 1+ month of spending.';
   if (t.spendingRatio > 70) return 'Review Needs vs Wants — cut one Want category this week.';
   if (p.protection < 50) return 'Add Health or Life coverage to strengthen your Protection score.';
-  if (state.goals.length === 0) return 'Create a goal with a target date so the mini calendar can guide you.';
+  if ((state.savings || []).filter(function (s) { return !s.isCompleted; }).length === 0) return 'Create a savings goal with a target date so the mini calendar can guide you.';
   if (t.savingsRate < 20) return 'Raise monthly savings toward a 20%+ rate for the Saver Streak achievement.';
   return 'You are on track — review Analytics and keep logging weekly.';
 }
@@ -632,15 +627,16 @@ function buildNotifications() {
     });
   }
   if (state.settings.notifications.goals) {
-    state.goals.forEach(g => {
-      const pct = g.target > 0 ? Math.round((g.current / g.target) * 100) : 0;
+    (state.savings || []).filter(function (s) { return !s.isCompleted; }).forEach(function (g) {
+      const targetAmt = Number(g.target) > 0 ? Number(g.target) : 0;
+      const pct = targetAmt > 0 ? Math.round((Number(g.amount) / targetAmt) * 100) : 0;
       if (g.dueDate) {
         const days = Math.ceil((new Date(g.dueDate) - new Date()) / 86400000);
         if (days >= 0 && days <= 14) {
           notes.push({
             id: 'goal-due-' + g.id,
             level: 'info',
-            action: 'goals',
+            action: 'savings',
             text: 'Goal "' + g.desc + '" due in ' + days + ' day(s) — ' + pct + '% done.'
           });
         }
@@ -649,7 +645,7 @@ function buildNotifications() {
         notes.push({
           id: 'goal-done-' + g.id,
           level: 'ok',
-          action: 'goals',
+          action: 'savings',
           text: 'Goal "' + g.desc + '" reached!'
         });
       }
@@ -1529,6 +1525,7 @@ function navigateTo(view) {
     showLoginModal();
     return;
   }
+  if (view === 'goals') view = 'savings';
   if (!VIEWS.includes(view)) view = user ? 'dashboard' : 'welcome';
   if (view === 'welcome' && user) view = 'dashboard';
   state.currentView = view;
@@ -1690,15 +1687,6 @@ function handleModuleSubmit(e, module) {
   } else if (module === 'protection') {
     // Protection uses modal submitProtectionModal()
     return;
-  } else if (module === 'goals') {
-    state.goals.push({
-      id, desc: document.getElementById('goal-desc').value,
-      current: parseFloat(document.getElementById('goal-current').value),
-      target: parseFloat(document.getElementById('goal-target').value),
-      monthly: parseFloat(document.getElementById('goal-monthly').value) || 0,
-      dueDate: document.getElementById('goal-due').value || ''
-    });
-    e.target.reset();
   }
   showToast('Saved to ' + module + '!', 'success');
   fireConfetti();
@@ -1844,7 +1832,7 @@ function shiftMiniCalendar(dir) {
 
 function scheduleDatesSet() {
   const set = new Set();
-  state.goals.forEach(g => { if (g.dueDate) set.add(g.dueDate); });
+  (state.savings || []).forEach(function (g) { if (g.dueDate && !g.isCompleted) set.add(g.dueDate); });
   state.expenses.forEach(e => {
     if (e.date && (e.needWant === 'Need' || ['Bills', 'Rent'].includes(e.category))) set.add(e.date);
   });
@@ -1923,7 +1911,6 @@ function renderApp() {
   renderMiniCalendar();
   renderDashboardExtras();
   renderModuleTables();
-  renderGoalsCards();
   renderProtectionPanel();
   renderAnalyticsPage();
   renderCalculator();
@@ -2056,11 +2043,13 @@ function updateSummaryMetrics() {
   animateNumber(document.getElementById('sav-monthly'), monthlySav);
   const eta = document.getElementById('sav-eta');
   if (eta) {
-    const incomplete = state.goals.filter(g => g.current < g.target);
+    const incomplete = (state.savings || []).filter(function (g) {
+      return !g.isCompleted && Number(g.target) > 0 && Number(g.amount) < Number(g.target);
+    });
     if (!incomplete.length) eta.textContent = 'Goals clear';
     else {
       const g = incomplete[0];
-      const left = g.target - g.current;
+      const left = Number(g.target) - Number(g.amount);
       const m = Number(g.monthly || monthlySav || 0);
       eta.textContent = m > 0 ? '~' + Math.ceil(left / m) + ' mo (' + g.desc + ')' : 'Set monthly ₱';
     }
@@ -2074,7 +2063,7 @@ function updateSidebarStats() {
     animateNumber(bal, t.remaining);
   }
   const g = document.getElementById('sidebar-goals-count');
-  if (g) g.textContent = String(state.goals.length);
+  if (g) g.textContent = String((state.savings || []).filter(function (s) { return !s.isCompleted; }).length);
   const sr = document.getElementById('sidebar-savings-rate');
   if (sr) sr.textContent = totals().savingsRate.toFixed(1) + '%';
   const sh = document.getElementById('sidebar-health-score');
@@ -2124,7 +2113,7 @@ function handleNotificationClick(event, key, action) {
     }, 80);
     return;
   }
-  if (action === 'spending' || action === 'goals' || action === 'settings' || action === 'dashboard') {
+  if (action === 'spending' || action === 'savings' || action === 'settings' || action === 'dashboard') {
     navigateTo(action);
     return;
   }
@@ -2218,20 +2207,28 @@ function toggleNotificationsDropdown(event) {
 function renderDashboardExtras() {
   const goalsList = document.getElementById('dash-goals-list');
   if (goalsList) {
-    const top = state.goals.slice().sort((a, b) => (b.current / (b.target || 1)) - (a.current / (a.target || 1))).slice(0, 4);
+    const top = (state.savings || []).filter(function (s) { return !s.isCompleted; })
+      .slice()
+      .sort(function (a, b) {
+        const pa = Number(a.target) > 0 ? Number(a.amount) / Number(a.target) : 0;
+        const pb = Number(b.target) > 0 ? Number(b.amount) / Number(b.target) : 0;
+        return pb - pa;
+      })
+      .slice(0, 4);
     if (!top.length) {
       goalsList.innerHTML =
         '<div class="dash-goals-empty">'
         + '<div class="dash-goals-empty-art" aria-hidden="true"><i data-lucide="target"></i></div>'
         + '<div class="dash-goals-empty-copy">'
-        + '<p class="dash-goals-empty-title">No goals yet.</p>'
-        + '<p class="dash-goals-empty-sub">Set your first goal and start building your future!</p>'
-        + '<button type="button" class="dash-goals-add-btn" onclick="navigateTo(\'goals\')">'
+        + '<p class="dash-goals-empty-title">No savings goals yet.</p>'
+        + '<p class="dash-goals-empty-sub">Set your first goal in Savings and start building your future!</p>'
+        + '<button type="button" class="dash-goals-add-btn" onclick="navigateTo(\'savings\')">'
         + '<i data-lucide="plus"></i> Add Goal</button>'
         + '</div></div>';
     } else {
-      goalsList.innerHTML = top.map(g => {
-        const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+      goalsList.innerHTML = top.map(function (g) {
+        const targetAmt = Number(g.target) > 0 ? Number(g.target) : Number(g.amount) || 0;
+        const pct = targetAmt > 0 ? Math.min(100, Math.round((Number(g.amount) / targetAmt) * 100)) : 0;
         return '<div class="dash-goal-row">'
           + '<div class="flex justify-between text-xs mb-1"><span class="font-bold">' + escapeHtml(g.desc) + '</span><span>' + pct + '%</span></div>'
           + '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>'
@@ -4261,30 +4258,20 @@ function renderInvestmentPage() {
   const msFill = document.getElementById('inv-milestone-fill');
   if (msFill) msFill.style.width = msPct.toFixed(1) + '%';
 
-  // Investment goals (from Goals module + defaults)
+  // Investment goals (derived from portfolio milestones)
   const goalsList = document.getElementById('inv-goals-list');
   if (goalsList) {
-    const goalItems = (state.goals || []).slice(0, 3);
-    if (!goalItems.length) {
-      const defaults = [
-        { desc: 'Build Long-Term Wealth', current: fullPortfolio * 0.45, target: Math.max(10000, fullPortfolio * 1.2) },
-        { desc: 'Buy a Property', current: (catMap.Property || 0), target: Math.max(50000, (catMap.Property || 0) + 40000) },
-        { desc: 'Financial Freedom', current: fullPortfolio, target: Math.max(150000, nextMs) }
-      ];
-      goalsList.innerHTML = defaults.map(function (g) {
-        const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-        return '<div class="inv-goal-row"><div class="top"><strong>' + escapeHtml(g.desc) + '</strong><span>' + pct + '%</span></div>'
-          + '<div class="inv-goal-track"><div class="inv-goal-fill" style="width:' + pct + '%"></div></div>'
-          + '<div class="meta">' + peso(g.current) + ' / ' + peso(g.target) + '</div></div>';
-      }).join('');
-    } else {
-      goalsList.innerHTML = goalItems.map(function (g) {
-        const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-        return '<div class="inv-goal-row"><div class="top"><strong>' + escapeHtml(g.desc) + '</strong><span>' + pct + '%</span></div>'
-          + '<div class="inv-goal-track"><div class="inv-goal-fill" style="width:' + pct + '%"></div></div>'
-          + '<div class="meta">' + peso(g.current) + ' / ' + peso(g.target) + '</div></div>';
-      }).join('');
-    }
+    const defaults = [
+      { desc: 'Build Long-Term Wealth', current: fullPortfolio * 0.45, target: Math.max(10000, fullPortfolio * 1.2) },
+      { desc: 'Buy a Property', current: (catMap.Property || 0), target: Math.max(50000, (catMap.Property || 0) + 40000) },
+      { desc: 'Financial Freedom', current: fullPortfolio, target: Math.max(150000, nextMs) }
+    ];
+    goalsList.innerHTML = defaults.map(function (g) {
+      const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+      return '<div class="inv-goal-row"><div class="top"><strong>' + escapeHtml(g.desc) + '</strong><span>' + pct + '%</span></div>'
+        + '<div class="inv-goal-track"><div class="inv-goal-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="meta">' + peso(g.current) + ' / ' + peso(g.target) + '</div></div>';
+    }).join('');
   }
 
   // Insights
@@ -4316,27 +4303,6 @@ function renderModuleTables() {
   renderSavingsPage();
   renderInvestmentPage();
   renderProtectionPage();
-}
-
-function renderGoalsCards() {
-  const wrap = document.getElementById('goals-cards');
-  if (!wrap) return;
-  if (!state.goals.length) {
-    wrap.innerHTML = '<div class="ft-card p-6 text-sm text-[var(--ft-muted)]">No goals yet — add one above.</div>';
-    return;
-  }
-  wrap.innerHTML = state.goals.map(g => {
-    const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-    const left = Math.max(0, g.target - g.current);
-    const months = g.monthly > 0 ? Math.ceil(left / g.monthly) : null;
-    return '<div class="ft-card p-5 space-y-3">' +
-      '<div class="flex justify-between gap-2"><h3 class="font-extrabold text-[var(--ft-ink)]">' + escapeHtml(g.desc) + '</h3>' +
-      '<button onclick="deleteItem(\'goals\',' + g.id + ')" class="text-[var(--ft-rosewood)]"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>' +
-      '<p class="text-xs text-[var(--ft-muted)]">' + peso(g.current) + ' / ' + peso(g.target) + (g.dueDate ? ' · Due ' + g.dueDate : '') + '</p>' +
-      '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="flex justify-between text-xs font-bold"><span>' + pct + '%</span><span>Monthly: ' + peso(g.monthly || 0) + '</span></div>' +
-      '<p class="text-[11px] text-[var(--ft-muted)]">Est. completion: ' + (months != null ? '~' + months + ' months' : 'set monthly contribution') + '</p></div>';
-  }).join('');
 }
 
 function renderProtectionPage() {
@@ -5497,10 +5463,11 @@ function renderAnalyticsPage() {
   const hs = healthScore();
   const pillars = pillarScores();
   let goalsScore = 15;
-  if (state.goals && state.goals.length) {
-    goalsScore = Math.round(state.goals.reduce(function (a, g) {
-      return a + (g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0);
-    }, 0) / state.goals.length);
+  const activeSavGoals = (state.savings || []).filter(function (s) { return !s.isCompleted && Number(s.target) > 0; });
+  if (activeSavGoals.length) {
+    goalsScore = Math.round(activeSavGoals.reduce(function (a, g) {
+      return a + Math.min(100, (Number(g.amount) / Number(g.target)) * 100);
+    }, 0) / activeSavGoals.length);
   } else if (t.savings > 0) goalsScore = 40;
   setText('an-health-score', String(hs));
   const healthLabel = document.getElementById('an-health-label');

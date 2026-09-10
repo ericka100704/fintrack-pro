@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=17">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
@@ -40,7 +40,6 @@
       <button onclick="navTo('savings')" class="nav-side-btn" data-nav="savings" title="Savings"><i data-lucide="piggy-bank" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Savings</span></button>
       <button onclick="navTo('investment')" class="nav-side-btn" data-nav="investment" title="Investment"><i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Investment</span></button>
       <button onclick="navTo('protection')" class="nav-side-btn" data-nav="protection" title="Protection"><i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Protection</span></button>
-      <button onclick="navTo('goals')" class="nav-side-btn" data-nav="goals" title="Goals"><i data-lucide="target" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Goals</span></button>
       <button onclick="navTo('analytics')" class="nav-side-btn" data-nav="analytics" title="Analytics"><i data-lucide="bar-chart-2" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Analytics</span></button>
       <button onclick="navTo('calculator')" class="nav-side-btn" data-nav="calculator" title="Calculator"><i data-lucide="calculator" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Calculator</span></button>
       <button onclick="navTo('settings')" class="nav-side-btn" data-nav="settings" title="Settings"><i data-lucide="settings" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Settings</span></button>
@@ -1096,7 +1095,7 @@
               <div class="ft-card p-4 dash-goals-card">
                 <div class="dash-goals-head">
                   <h3 class="dash-section-title !mb-0"><i data-lucide="target" class="w-4 h-4"></i> Top Goals</h3>
-                  <button type="button" class="dash-goals-viewall" onclick="navigateTo('goals')">View All <i data-lucide="arrow-right"></i></button>
+                  <button type="button" class="dash-goals-viewall" onclick="navigateTo('savings')">View All <i data-lucide="arrow-right"></i></button>
                 </div>
                 <div id="dash-goals-list" class="dash-goals-body"></div>
               </div>
@@ -2070,50 +2069,6 @@
       </div>
     </section>
 
-    <!-- GOALS -->
-    <section id="view-goals" class="hidden space-y-5">
-      <div class="income-hero">
-        <div class="income-hero-copy">
-          <p class="income-hero-kicker">Goals</p>
-          <h2 class="income-hero-title">Reach Your Goals <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
-          <p class="income-hero-sub">Progress, contributions &amp; target dates.</p>
-        </div>
-        <div class="income-hero-deco" aria-hidden="true"></div>
-        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
-          <div class="vday-gift-box">
-            <div class="vday-gift-lid"></div>
-            <div class="vday-gift-body"></div>
-            <div class="vday-gift-bow"></div>
-            <div class="vday-gift-tag">Dreams come true ❤️</div>
-          </div>
-          <div class="vday-hero-roses">🌹🌹</div>
-          <span class="vday-spark s1">♥</span>
-          <span class="vday-spark s2">♥</span>
-          <span class="vday-spark s3">♥</span>
-        </div>
-        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
-          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
-        </div>
-        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
-          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
-        </div>
-        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
-          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
-        </div>
-      </div>
-      <div class="ft-card p-4">
-        <form id="goals-form" onsubmit="handleModuleSubmit(event,'goals')" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <input type="text" id="goal-desc" placeholder="Goal name" required class="ft-input">
-          <input type="number" id="goal-current" placeholder="Current (₱)" step="0.01" required class="ft-input">
-          <input type="number" id="goal-target" placeholder="Target (₱)" step="0.01" required class="ft-input">
-          <input type="number" id="goal-monthly" placeholder="Monthly ₱" step="0.01" class="ft-input">
-          <input type="date" id="goal-due" class="ft-input" title="Target date">
-          <button type="submit" class="theme-btn-primary h-10 rounded-xl text-white font-bold text-xs sm:col-span-2 lg:col-span-5 flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Add Goal</button>
-        </form>
-      </div>
-      <div id="goals-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-    </section>
-
     <!-- ANALYTICS -->
     <section id="view-analytics" class="hidden analytics-page">
       <div class="income-hero">
@@ -2290,9 +2245,9 @@
               <span>Coverage & safety net</span>
               <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
             </button>
-            <button type="button" class="an-nav-card" onclick="navigateTo('goals')">
+            <button type="button" class="an-nav-card" onclick="navigateTo('savings')">
               <span class="an-nav-ico is-goals"><i data-lucide="target"></i></span>
-              <strong>Goals</strong>
+              <strong>Savings Goals</strong>
               <span>Targets & progress</span>
               <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
             </button>
@@ -2680,6 +2635,6 @@
     FinTrack Pro &copy; 2026
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=17"></script>
 </body>
 </html>
