@@ -1480,23 +1480,12 @@ function syncDesktopSidebar() {
   if (overlay) overlay.classList.add('hidden');
   document.body.classList.remove('sidebar-open');
   document.body.style.overflow = '';
-  if (document.body.classList.contains('on-landing')) {
-    document.body.classList.remove('sidebar-expanded');
-  }
+  // Desktop uses a stable full sidebar — no hover expand state
+  document.body.classList.remove('sidebar-expanded');
 }
 
 function initSidebarHoverExpand() {
-  const sidebar = document.getElementById('sidebar');
-  if (!sidebar || sidebar.dataset.hoverBound === '1') return;
-  sidebar.dataset.hoverBound = '1';
-  sidebar.addEventListener('mouseenter', function () {
-    if (isDesktopSidebar() && !document.body.classList.contains('on-landing')) {
-      document.body.classList.add('sidebar-expanded');
-    }
-  });
-  sidebar.addEventListener('mouseleave', function () {
-    document.body.classList.remove('sidebar-expanded');
-  });
+  // No-op: hover icon-rail expand caused overflowing nav pills on some laptops.
 }
 
 function toggleSidebar(e) {

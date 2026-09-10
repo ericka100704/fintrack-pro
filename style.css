@@ -1660,6 +1660,8 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
 
 .nav-side-btn {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1668,12 +1670,19 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--ft-muted);
-  transition: all 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
   border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.nav-side-btn .sidebar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nav-side-btn:hover {
   background: rgba(255,255,255,0.55);
@@ -1718,9 +1727,10 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 #sidebar.active { transform: translateX(0); }
 #sidebar-overlay {
@@ -1733,15 +1743,19 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
 #sidebar-overlay.hidden { display: none !important; }
 body.sidebar-open { overflow: hidden; }
 
-/* Desktop: icon rail by default; expand on hover */
+/* Desktop: always show a stable full sidebar (no hover icon-rail — that overflowed on some laptops) */
 @media (min-width: 1024px) {
   body:not(.on-landing) #sidebar {
     transform: translateX(0) !important;
-    width: 4.75rem;
+    width: 16.5rem;
+    min-width: 16.5rem;
+    max-width: 16.5rem;
     z-index: 60;
+    overflow-x: hidden !important;
+    overflow-y: auto;
   }
   body:not(.on-landing) {
-    padding-left: 4.75rem;
+    padding-left: 16.5rem;
     transition: padding-left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   body:not(.on-landing) #sidebar-overlay {
@@ -1762,105 +1776,82 @@ body.sidebar-open { overflow: hidden; }
   }
 
   body:not(.on-landing) #sidebar .sidebar-label {
-    opacity: 0;
-    max-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    pointer-events: none;
-    transition: opacity 0.2s ease, max-width 0.28s ease;
-  }
-  body:not(.on-landing) #sidebar .sidebar-stats,
-  body:not(.on-landing) #sidebar .sidebar-quote {
-    display: none;
-  }
-  body:not(.on-landing) #sidebar .sidebar-head {
-    justify-content: center;
-    padding: 0.9rem 0.55rem;
-  }
-  body:not(.on-landing) #sidebar .sidebar-nav {
-    padding: 0.5rem 0.45rem;
-    align-items: center;
-  }
-  body:not(.on-landing) #sidebar .nav-side-btn {
-    justify-content: center;
-    width: 2.85rem;
-    height: 2.85rem;
-    padding: 0;
-    gap: 0;
-    border-radius: 0.9rem;
-  }
-  body:not(.on-landing) #sidebar .sidebar-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.75rem 0.45rem !important;
-  }
-  body:not(.on-landing) #sidebar .sidebar-footer .theme-btn-primary,
-  body:not(.on-landing) #sidebar .sidebar-footer button {
-    width: 2.85rem;
-    min-height: 2.85rem;
-    padding: 0;
-    border-radius: 0.9rem;
-  }
-  body:not(.on-landing) #sidebar #sidebar-user-section > .flex {
-    justify-content: center;
-    margin-bottom: 0.5rem;
-  }
-
-  /* Hover / expanded: full sidebar pushes content right */
-  body:not(.on-landing).sidebar-expanded {
-    padding-left: 18rem;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar {
-    width: 18rem;
-    box-shadow:
-      12px 0 32px rgba(140, 100, 100, 0.14),
-      2px 0 0 rgba(255, 255, 255, 0.7) inset;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-label {
     opacity: 1;
     max-width: 12rem;
-    overflow: visible;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     pointer-events: auto;
   }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-head {
-    justify-content: space-between;
-    padding: 1rem 1.1rem;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-nav {
-    align-items: stretch;
-    padding: 0.65rem;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .nav-side-btn {
-    justify-content: flex-start;
-    width: 100%;
-    height: auto;
-    padding: 0.7rem 1rem;
-    gap: 0.75rem;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-stats {
+  body:not(.on-landing) #sidebar .sidebar-stats {
     display: block;
-    padding: 0.75rem 1rem !important;
   }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-quote {
+  body:not(.on-landing) #sidebar .sidebar-quote {
     display: flex;
     width: 100%;
     max-width: 100%;
     white-space: normal;
   }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer {
-    align-items: stretch;
-    padding: 1rem !important;
+  body:not(.on-landing) #sidebar .sidebar-head {
+    justify-content: space-between;
+    padding: 1rem 1.1rem;
   }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer .theme-btn-primary,
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer button {
+  body:not(.on-landing) #sidebar .sidebar-nav {
+    padding: 0.55rem 0.65rem;
+    align-items: stretch;
+    gap: 0.15rem;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  body:not(.on-landing) #sidebar .nav-side-btn {
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 0.62rem 0.85rem;
+    gap: 0.65rem;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  body:not(.on-landing) #sidebar .sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.85rem 1rem !important;
+  }
+  body:not(.on-landing) #sidebar .sidebar-footer .theme-btn-primary,
+  body:not(.on-landing) #sidebar .sidebar-footer button {
     width: 100%;
     min-height: 2.5rem;
     height: auto;
     padding: 0 0.75rem;
+    border-radius: 0.9rem;
   }
-  body:not(.on-landing).sidebar-expanded #sidebar #sidebar-user-section > .flex {
+  body:not(.on-landing) #sidebar #sidebar-user-section > .flex {
     justify-content: flex-start;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Short laptop screens — keep all nav items reachable */
+@media (min-width: 1024px) and (max-height: 820px) {
+  body:not(.on-landing) #sidebar .sidebar-nav {
+    gap: 0.05rem;
+    padding: 0.4rem 0.55rem;
+  }
+  body:not(.on-landing) #sidebar .nav-side-btn {
+    padding: 0.48rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  body:not(.on-landing) #sidebar .sidebar-stats {
+    padding: 0.55rem 0.85rem !important;
+  }
+  body:not(.on-landing) #sidebar .ft-stat-row {
+    padding: 0.35rem 0.55rem;
+  }
+  body:not(.on-landing) #sidebar .sidebar-quote {
+    display: none;
   }
 }
 
