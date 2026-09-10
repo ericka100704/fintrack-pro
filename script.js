@@ -2070,15 +2070,17 @@ function updateSummaryMetrics() {
 }
 
 function updateSidebarStats() {
-  const t = totals();
-  const hs = healthScore();
-  animateNumber(document.getElementById('sidebar-total-balance'), t.remaining);
+  const bal = document.getElementById('sidebar-total-balance');
+  if (bal) {
+    const t = totals();
+    animateNumber(bal, t.remaining);
+  }
   const g = document.getElementById('sidebar-goals-count');
   if (g) g.textContent = String(state.goals.length);
   const sr = document.getElementById('sidebar-savings-rate');
-  if (sr) sr.textContent = t.savingsRate.toFixed(1) + '%';
+  if (sr) sr.textContent = totals().savingsRate.toFixed(1) + '%';
   const sh = document.getElementById('sidebar-health-score');
-  if (sh) sh.textContent = hs + '/100';
+  if (sh) sh.textContent = healthScore() + '/100';
   const act = document.getElementById('sidebar-latest-activity');
   if (act) {
     const latest = [].concat(state.income, state.expenses).sort((a, b) => b.id - a.id)[0];

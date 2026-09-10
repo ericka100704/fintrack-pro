@@ -46,32 +46,7 @@
       <button onclick="navTo('settings')" class="nav-side-btn" data-nav="settings" title="Settings"><i data-lucide="settings" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Settings</span></button>
     </nav>
 
-    <div class="sidebar-panel sidebar-stats px-4 py-3 border-t border-[var(--ft-border)]">
-      <p class="text-[10px] uppercase font-bold text-[var(--ft-muted)] mb-2 tracking-wider">Quick Stats</p>
-      <div class="space-y-2">
-        <div class="ft-stat-row"><span><i data-lucide="wallet" class="w-3.5 h-3.5 inline theme-text"></i> Balance</span><span id="sidebar-total-balance" class="font-bold theme-text">₱0.00</span></div>
-        <div class="ft-stat-row"><span><i data-lucide="target" class="w-3.5 h-3.5 inline text-[var(--ft-rosewood)]"></i> Goals</span><span id="sidebar-goals-count" class="font-bold">0</span></div>
-        <div class="ft-stat-row"><span><i data-lucide="trending-up" class="w-3.5 h-3.5 inline text-[var(--ft-sage)]"></i> Savings Rate</span><span id="sidebar-savings-rate" class="font-bold">0%</span></div>
-        <div class="ft-stat-row"><span><i data-lucide="heart-pulse" class="w-3.5 h-3.5 inline text-[var(--ft-blush)]"></i> Health</span><span id="sidebar-health-score" class="font-bold">0/100</span></div>
-      </div>
-      <p class="text-[10px] text-[var(--ft-muted)] mt-3 truncate" id="sidebar-latest-activity">Welcome to FinTrack Pro</p>
-    </div>
-
     <div class="sidebar-panel sidebar-footer px-4 py-4 border-t border-[var(--ft-border)] mt-auto">
-      <div class="sidebar-quote">
-        <i data-lucide="sprout" class="w-4 h-4 shrink-0 sidebar-quote-ico"></i>
-        <span class="sidebar-quote-text">Small changes today, big financial wins tomorrow. ♡</span>
-        <img class="easter-sidebar-bunny easter-only" hidden src="assets/easter/bunny.png?v=1" alt="" width="120" height="120" decoding="async" aria-hidden="true">
-        <img class="halloween-sidebar-art halloween-only" hidden src="assets/halloween/pumpkin.png?v=1" alt="" width="120" height="120" decoding="async" aria-hidden="true">
-        <div class="vday-quote-deco" aria-hidden="true">
-          <span class="vday-rose vday-rose-a">🌹</span>
-          <span class="vday-rose vday-rose-b">🌹</span>
-          <span class="vday-rose vday-rose-c">🌹</span>
-          <span class="vday-float-heart h1">♥</span>
-          <span class="vday-float-heart h2">♥</span>
-          <span class="vday-float-heart h3">♥</span>
-        </div>
-      </div>
       <div id="sidebar-auth-section">
         <button onclick="showLoginModal(); toggleSidebar(event)" class="theme-btn-primary w-full h-11 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2">
           <i data-lucide="log-in" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Sign In</span>

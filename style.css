@@ -1670,7 +1670,12 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--ft-muted);
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
@@ -1684,14 +1689,35 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.nav-side-btn i {
+  transition: transform 0.2s ease, color 0.2s ease;
+}
 .nav-side-btn:hover {
-  background: rgba(255,255,255,0.55);
-  color: var(--ft-ink);
+  background: color-mix(in srgb, var(--theme-primary) 14%, white);
+  color: var(--theme-primary);
+  border-color: color-mix(in srgb, var(--theme-primary) 22%, transparent);
+  transform: translateX(3px);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--theme-primary) 16%, transparent);
+}
+.nav-side-btn:hover i {
+  color: var(--theme-primary);
+  transform: scale(1.08);
+}
+.nav-side-btn:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--theme-primary) 14%, white);
+  color: var(--theme-primary);
+  border-color: color-mix(in srgb, var(--theme-primary) 28%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 18%, transparent);
 }
 .nav-side-btn.active {
   color: var(--theme-primary);
   background: color-mix(in srgb, var(--theme-primary) 12%, white);
   border-color: color-mix(in srgb, var(--theme-primary) 25%, transparent);
+}
+.nav-side-btn.active:hover {
+  transform: translateX(3px);
+  background: color-mix(in srgb, var(--theme-primary) 18%, white);
 }
 
 .ft-sidebar {
@@ -1813,6 +1839,9 @@ body.sidebar-open { overflow: hidden; }
     border-radius: 0.9rem;
     overflow: hidden !important;
     flex-shrink: 0;
+  }
+  body:not(.on-landing) #sidebar .nav-side-btn:hover {
+    transform: scale(1.06);
   }
   body:not(.on-landing) #sidebar .sidebar-footer {
     display: flex;
