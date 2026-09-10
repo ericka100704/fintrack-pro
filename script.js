@@ -1501,6 +1501,7 @@ function initSidebarHoverExpand() {
 
 function toggleSidebar(e) {
   if (e) e.stopPropagation();
+  if (document.body.classList.contains('on-landing')) return;
   if (isDesktopSidebar() && !document.body.classList.contains('on-landing')) return;
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebar-overlay');

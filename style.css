@@ -1078,6 +1078,18 @@ body.on-landing footer {
 body.on-landing #header-notif-btn {
   display: none !important;
 }
+body.on-landing #header-menu-btn,
+body.on-landing .header-notif-wrap {
+  display: none !important;
+}
+body.on-landing #sidebar,
+body.on-landing #sidebar-overlay {
+  display: none !important;
+  pointer-events: none !important;
+}
+body.on-landing.sidebar-open {
+  overflow: auto;
+}
 
 .landing-page {
   padding: 1rem 1.15rem 3.5rem;
