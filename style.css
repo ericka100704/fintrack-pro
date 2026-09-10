@@ -1771,7 +1771,7 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
 #sidebar-overlay.hidden { display: none !important; }
 body.sidebar-open { overflow: hidden; }
 
-/* Desktop: icon-rail by default; expand on hover (.sidebar-expanded) */
+/* Desktop: icon-rail by default; expand on hover (CSS :hover + optional .sidebar-expanded) */
 @media (min-width: 1024px) {
   body:not(.on-landing) #sidebar {
     transform: translateX(0) !important;
@@ -1779,8 +1779,9 @@ body.sidebar-open { overflow: hidden; }
     min-width: 4.75rem !important;
     max-width: 4.75rem !important;
     z-index: 60;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     overflow-y: auto;
+    contain: inline-size;
   }
   body:not(.on-landing) {
     padding-left: 4.75rem;
@@ -1803,10 +1804,8 @@ body.sidebar-open { overflow: hidden; }
     transform: translateX(-100%) !important;
   }
 
-  /* Collapsed: hide ALL text labels — display:none so they cannot expand the rail */
-  body:not(.on-landing) #sidebar .sidebar-label {
-    display: none !important;
-  }
+  /* Collapsed: kill every text node so nothing can bleed */
+  body:not(.on-landing) #sidebar .sidebar-label,
   body:not(.on-landing) #sidebar .sidebar-stats,
   body:not(.on-landing) #sidebar .sidebar-quote,
   body:not(.on-landing) #sidebar .sidebar-quote-text,
@@ -1841,6 +1840,7 @@ body.sidebar-open { overflow: hidden; }
     border-radius: 0.9rem;
     overflow: hidden !important;
     flex-shrink: 0;
+    transform: none;
   }
   body:not(.on-landing) #sidebar .nav-side-btn:hover {
     transform: scale(1.06);
@@ -1869,18 +1869,22 @@ body.sidebar-open { overflow: hidden; }
     overflow: hidden;
   }
 
-  /* Hover / expanded: full sidebar pushes content right */
+  /* Expanded via real CSS hover OR .sidebar-expanded class */
+  body:not(.on-landing):has(#sidebar:hover),
   body:not(.on-landing).sidebar-expanded {
     padding-left: 18rem;
   }
+  body:not(.on-landing) #sidebar:hover,
   body:not(.on-landing).sidebar-expanded #sidebar {
     width: 18rem !important;
     min-width: 18rem !important;
     max-width: 18rem !important;
+    overflow-x: hidden !important;
     box-shadow:
       12px 0 32px rgba(140, 100, 100, 0.14),
       2px 0 0 rgba(255, 255, 255, 0.7) inset;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-label,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-label {
     display: block !important;
     opacity: 1;
@@ -1890,17 +1894,21 @@ body.sidebar-open { overflow: hidden; }
     white-space: nowrap;
     pointer-events: auto;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-head,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-head {
     justify-content: space-between;
     padding: 1rem 1.1rem;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-head > .flex,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-head > .flex {
     justify-content: flex-start;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-nav,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-nav {
     align-items: stretch;
     padding: 0.65rem;
   }
+  body:not(.on-landing) #sidebar:hover .nav-side-btn,
   body:not(.on-landing).sidebar-expanded #sidebar .nav-side-btn {
     justify-content: flex-start;
     width: 100% !important;
@@ -1908,27 +1916,27 @@ body.sidebar-open { overflow: hidden; }
     height: auto;
     padding: 0.7rem 1rem !important;
     gap: 0.75rem !important;
+    transform: none;
   }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-stats {
-    display: block !important;
-    padding: 0.75rem 1rem !important;
+  body:not(.on-landing) #sidebar:hover .nav-side-btn:hover,
+  body:not(.on-landing).sidebar-expanded #sidebar .nav-side-btn:hover {
+    transform: translateX(3px);
   }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-quote {
-    display: flex !important;
-    width: 100%;
-    max-width: 100%;
-    white-space: normal;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-quote-text {
-    display: inline !important;
-  }
+  body:not(.on-landing) #sidebar:hover #sidebar-user-email,
   body:not(.on-landing).sidebar-expanded #sidebar #sidebar-user-email {
     display: block !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-footer,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer {
     align-items: stretch;
     padding: 1rem !important;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-footer .theme-btn-primary,
+  body:not(.on-landing) #sidebar:hover .sidebar-footer button,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer .theme-btn-primary,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer button {
     width: 100% !important;
@@ -1937,9 +1945,11 @@ body.sidebar-open { overflow: hidden; }
     height: auto;
     padding: 0 0.75rem !important;
   }
+  body:not(.on-landing) #sidebar:hover .sidebar-footer .sidebar-label,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-footer .sidebar-label {
     display: inline !important;
   }
+  body:not(.on-landing) #sidebar:hover #sidebar-user-section > .flex,
   body:not(.on-landing).sidebar-expanded #sidebar #sidebar-user-section > .flex {
     justify-content: flex-start;
   }
@@ -1947,19 +1957,15 @@ body.sidebar-open { overflow: hidden; }
 
 /* Short laptop screens — keep expanded nav reachable */
 @media (min-width: 1024px) and (max-height: 820px) {
+  body:not(.on-landing) #sidebar:hover .sidebar-nav,
   body:not(.on-landing).sidebar-expanded #sidebar .sidebar-nav {
     gap: 0.05rem;
     padding: 0.4rem 0.55rem;
   }
+  body:not(.on-landing) #sidebar:hover .nav-side-btn,
   body:not(.on-landing).sidebar-expanded #sidebar .nav-side-btn {
     padding: 0.48rem 0.75rem !important;
     font-size: 0.75rem;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-stats {
-    padding: 0.55rem 0.85rem !important;
-  }
-  body:not(.on-landing).sidebar-expanded #sidebar .sidebar-quote {
-    display: none !important;
   }
 }
 

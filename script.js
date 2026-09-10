@@ -1480,24 +1480,22 @@ function syncDesktopSidebar() {
   if (overlay) overlay.classList.add('hidden');
   document.body.classList.remove('sidebar-open');
   document.body.style.overflow = '';
-  // Keep collapsed by default; hover expand is handled separately.
-  // Only clear expand when on landing (sidebar must stay hidden).
-  if (document.body.classList.contains('on-landing')) {
-    document.body.classList.remove('sidebar-expanded');
-  }
+  // Never leave a stuck expanded class — CSS :hover handles expand/collapse.
+  document.body.classList.remove('sidebar-expanded');
 }
 
 function initSidebarHoverExpand() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar || sidebar.dataset.hoverBound === '1') return;
   sidebar.dataset.hoverBound = '1';
-  sidebar.addEventListener('mouseenter', function () {
-    if (isDesktopSidebar() && !document.body.classList.contains('on-landing')) {
-      document.body.classList.add('sidebar-expanded');
-    }
-  });
+  // CSS :hover is the source of truth. Clear any stuck class on leave / outside click.
   sidebar.addEventListener('mouseleave', function () {
     document.body.classList.remove('sidebar-expanded');
+  });
+  document.addEventListener('click', function (e) {
+    if (!sidebar.contains(e.target)) {
+      document.body.classList.remove('sidebar-expanded');
+    }
   });
 }
 
