@@ -3935,9 +3935,12 @@ body[data-mode="dark"] .tutorial-target {
   backdrop-filter: blur(12px);
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(0.75rem, env(safe-area-inset-top, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px))
+    max(0.75rem, env(safe-area-inset-bottom, 0px))
+    max(0.75rem, env(safe-area-inset-left, 0px));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -3946,17 +3949,20 @@ body[data-mode="dark"] .tutorial-target {
   background: linear-gradient(145deg, #fffdf8, #F7F1E0);
   border: 1px solid var(--ft-border);
   border-radius: 1.75rem;
-  padding: 1.5rem 1.75rem;
+  padding: clamp(1rem, 2.2vh, 1.5rem) clamp(1rem, 3vw, 1.75rem);
   max-width: 440px;
-  width: 100%;
-  max-height: min(92vh, 720px);
+  width: min(100%, 440px);
+  max-height: min(92dvh, 92vh, 720px);
+  overflow-x: hidden;
   overflow-y: auto;
   box-shadow: 0 25px 50px rgba(61, 77, 87, 0.2);
   animation: fadeUp 0.35s ease;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  margin: auto;
 }
 .auth-modal h2 {
-  font-size: 1.35rem;
+  font-size: clamp(1.1rem, 2.4vh, 1.35rem);
   font-weight: 800;
   color: var(--ft-ink);
   margin-bottom: 0.25rem;
@@ -3969,8 +3975,13 @@ body[data-mode="dark"] .tutorial-target {
 .login-modal-content {
   position: relative;
   max-width: 400px;
-  padding: 2rem 1.75rem 1.75rem;
-  overflow: hidden;
+  width: min(100%, 400px);
+  max-height: min(90dvh, 90vh, 680px);
+  padding: clamp(1.1rem, 2.5vh, 2rem) clamp(1rem, 3vw, 1.75rem) clamp(1rem, 2vh, 1.75rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .close-modal-btn {
   position: absolute;
@@ -4181,6 +4192,10 @@ body[data-mode="dark"] .tutorial-target {
   font-weight: 700;
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.7rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
   border-radius: 0.65rem;
   border: 1px solid transparent;
 }
@@ -4256,6 +4271,39 @@ body[data-mode="dark"] .password-feedback.error {
   color: var(--theme-primary);
   font-weight: 800;
   cursor: pointer;
+}
+
+/* Short laptop / small viewport — keep Sign Up / Login Now reachable */
+@media (max-height: 820px) {
+  .login-modal-content .tabs-container { margin: 0.7rem 0; }
+  .login-modal-content .input-group { margin-bottom: 0.55rem; }
+  .login-modal-content .input-group input { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+  .login-modal-content .submit-btn { height: 42px; }
+  .login-modal-content .auth-footer { margin-top: 0.7rem; }
+  .login-modal-content .divider-container { margin: 0.65rem 0; }
+  .login-modal-content .password-feedback { font-size: 0.72rem; line-height: 1.35; }
+}
+@media (max-height: 700px) {
+  .auth-modal-overlay { align-items: flex-start; }
+  .login-modal-content {
+    max-height: none;
+    margin: 0.5rem auto;
+  }
+  .login-modal-content .modal-header { margin-bottom: 0.4rem; }
+  .login-modal-content .modal-icon { padding: 0.45rem; border-radius: 0.85rem; }
+  .login-modal-content .modal-title { font-size: 1.15rem; }
+  .login-modal-content .modal-subtitle { font-size: 0.72rem; }
+  .login-modal-content .tabs-container { margin: 0.5rem 0; }
+  .login-modal-content .tab-btn { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
+  .login-modal-content .social-btn { height: 38px; }
+  .login-modal-content .auth-footer { margin-top: 0.55rem; padding-bottom: 0.25rem; }
+}
+@media (max-width: 420px) {
+  .login-modal-content {
+    border-radius: 1.25rem;
+    max-width: 100%;
+  }
+  .login-modal-content .social-btn-text { font-size: 0.7rem; }
 }
 
 .user-badge {
