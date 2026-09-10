@@ -431,22 +431,24 @@ body.modal-open {
   text-transform: uppercase;
   line-height: 1.2;
   margin: 0;
+  color: var(--theme-primary);
 }
 .dash-metric-value {
   display: block;
   width: 100%;
-  font-size: clamp(0.82rem, 1.35vw, 1.05rem);
+  max-width: 100%;
+  font-size: clamp(0.72rem, 1.05vw, 0.92rem);
   font-weight: 900;
   letter-spacing: -0.02em;
-  line-height: 1.25;
+  line-height: 1.15;
   color: var(--ft-lagoon);
   -webkit-text-fill-color: unset;
   background: none;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 .dash-metric-trend {
   font-size: 0.64rem;
@@ -469,7 +471,7 @@ body.modal-open {
   background: var(--ft-sage);
   color: var(--ft-lagoon);
 }
-.dash-metric-card.is-income .dash-metric-label { color: var(--ft-sage-deep); }
+.dash-metric-card.is-income .dash-metric-label { color: var(--theme-primary); }
 
 .dash-metric-card.is-spending {
   background: linear-gradient(160deg, var(--ft-cream) 0%, var(--theme-primary-light) 100%);
@@ -491,7 +493,7 @@ body.modal-open {
   background: var(--ft-sage);
   color: var(--ft-lagoon);
 }
-.dash-metric-card.is-savings .dash-metric-label { color: var(--ft-sage-deep); }
+.dash-metric-card.is-savings .dash-metric-label { color: var(--theme-primary); }
 
 .dash-metric-card.is-investments {
   background: linear-gradient(160deg, var(--ft-cream) 0%, #d5dee8 100%);
@@ -502,7 +504,7 @@ body.modal-open {
   background: var(--ft-misty);
   color: var(--ft-lagoon);
 }
-.dash-metric-card.is-investments .dash-metric-label { color: #5a6b7a; }
+.dash-metric-card.is-investments .dash-metric-label { color: var(--theme-primary); }
 
 .dash-metric-card.is-protection {
   background: linear-gradient(160deg, #eef2f5 0%, var(--ft-misty) 100%);
@@ -513,7 +515,7 @@ body.modal-open {
   background: #c5d0db;
   color: var(--ft-lagoon);
 }
-.dash-metric-card.is-protection .dash-metric-label,
+.dash-metric-card.is-protection .dash-metric-label { color: var(--theme-primary); }
 .dash-metric-card.is-protection .dash-metric-value { color: var(--ft-lagoon); }
 
 /* Dashboard chart / content cards — strong lift too */
@@ -529,7 +531,7 @@ body.modal-open {
   font-size: 0.8rem;
   font-weight: 900;
   letter-spacing: 0.02em;
-  color: #1e293b;
+  color: var(--theme-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -860,7 +862,7 @@ body.modal-open {
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8f5a62;
+  color: var(--theme-primary);
 }
 .dash-welcome-title {
   font-family: 'Fraunces', Georgia, serif;
@@ -868,11 +870,11 @@ body.modal-open {
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.05;
-  color: #1e293b;
+  color: var(--ft-ink);
   margin: 0;
 }
 .dash-welcome-title .dash-hello-name {
-  background: linear-gradient(135deg, #7a4f55, #B9868C 55%, #8f5a62);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-light) 55%, var(--theme-primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -4498,7 +4500,7 @@ body[data-mode="dark"] .password-feedback.error {
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8f5a62;
+  color: var(--theme-primary);
 }
 .income-hero-title {
   margin: 0;
@@ -4506,7 +4508,7 @@ body[data-mode="dark"] .password-feedback.error {
   font-size: clamp(1.8rem, 3.5vw, 2.45rem);
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: #2D3A47;
+  color: var(--theme-primary);
   line-height: 1.1;
 }
 .income-hero-sub {
@@ -5396,13 +5398,17 @@ body[data-mode="dark"] .income-balance-card {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6b7785;
+  color: var(--theme-primary);
 }
 .spend-metric-value {
   margin: 0.15rem 0 0;
-  font-size: 1.25rem;
+  font-size: clamp(0.85rem, 1.2vw, 1.1rem);
   font-weight: 900;
   color: #2D3A47;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .spend-metric-meta {
   margin: 0.2rem 0 0;
@@ -5899,8 +5905,17 @@ body[data-mode="dark"] .spend-quote {
 }
 .sav-metric-rate .sav-metric-icon, .sav-metric-monthly .sav-metric-icon { color: var(--theme-primary); }
 .sav-metric-icon i { width: 1.05rem; height: 1.05rem; }
-.sav-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7785; }
-.sav-metric-value { margin: 0.15rem 0 0; font-size: 1.05rem; font-weight: 900; color: #2D3A47; }
+.sav-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--theme-primary); }
+.sav-metric-value {
+  margin: 0.15rem 0 0;
+  font-size: clamp(0.82rem, 1.15vw, 1.05rem);
+  font-weight: 900;
+  color: #2D3A47;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .sav-metric-value-sm { font-size: 0.95rem; }
 .sav-metric-badge { margin: 0.25rem 0 0; font-size: 0.68rem; font-weight: 800; color: #6f8458; }
 .sav-metric-badge.is-up { color: #b45309; }
@@ -6126,8 +6141,17 @@ body[data-mode="dark"] .sav-quote { background: #2d3a42; color: #F7C8D3; }
 .inv-metric-gain .inv-metric-icon, .inv-metric-return .inv-metric-icon { color: #6f8458; }
 .inv-metric-monthly .inv-metric-icon { color: #5f7388; }
 .inv-metric-icon i { width: 1.05rem; height: 1.05rem; }
-.inv-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7785; }
-.inv-metric-value { margin: 0.15rem 0 0; font-size: 1.05rem; font-weight: 900; color: #2D3A47; }
+.inv-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--theme-primary); }
+.inv-metric-value {
+  margin: 0.15rem 0 0;
+  font-size: clamp(0.82rem, 1.15vw, 1.05rem);
+  font-weight: 900;
+  color: #2D3A47;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .inv-metric-badge { margin: 0.25rem 0 0; font-size: 0.68rem; font-weight: 800; color: #6f8458; }
 .inv-metric-badge.is-down { color: var(--theme-primary); }
 .inv-metric-meta { margin: 0.25rem 0 0; font-size: 0.68rem; font-weight: 650; color: #7a868f; }
@@ -6590,9 +6614,18 @@ body[data-mode="dark"] .investment-period-select {
 .prot-metric-cost .prot-metric-icon { color: #a67c52; }
 .prot-metric-icon i { width: 1.1rem; height: 1.1rem; }
 .prot-metric-body { min-width: 0; flex: 1; }
-.prot-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7785; }
+.prot-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--theme-primary); }
 .prot-metric-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.15rem; }
-.prot-metric-value { margin: 0; font-size: 1.1rem; font-weight: 900; color: #2D3A47; }
+.prot-metric-value {
+  margin: 0;
+  font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+  font-weight: 900;
+  color: #2D3A47;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .prot-metric-trend { margin: 0.3rem 0 0; font-size: 0.68rem; font-weight: 800; color: #6f8458; }
 .prot-metric-meta { margin: 0.3rem 0 0; font-size: 0.65rem; font-weight: 650; color: #7a868f; }
 .prot-badge {
@@ -6859,8 +6892,17 @@ body[data-mode="dark"] .protection-period-select {
 .an-metric-income .an-metric-icon { color: #5f7388; }
 .an-metric-nw .an-metric-icon { color: #a67c52; }
 .an-metric-icon i { width: 1.1rem; height: 1.1rem; }
-.an-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7785; }
-.an-metric-value { margin: 0.15rem 0 0; font-size: 1.1rem; font-weight: 900; color: #2D3A47; }
+.an-metric-label { margin: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--theme-primary); }
+.an-metric-value {
+  margin: 0.15rem 0 0;
+  font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+  font-weight: 900;
+  color: #2D3A47;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .an-metric-trend { margin: 0.3rem 0 0; font-size: 0.68rem; font-weight: 800; color: #7a868f; }
 .an-metric-trend.is-up { color: #6f8458; }
 .an-metric-trend.is-down { color: var(--theme-primary); }
@@ -7318,7 +7360,7 @@ body[data-mode="dark"] .calculator-period-select {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.85rem;
 }
 .settings-title {
-  margin: 0; font-size: 1.45rem; font-weight: 900; color: #2D3A47;
+  margin: 0; font-size: 1.45rem; font-weight: 900; color: var(--theme-primary);
   display: inline-flex; align-items: center; gap: 0.45rem;
 }
 .settings-title-ico { width: 1.25rem; height: 1.25rem; color: var(--theme-primary); }
@@ -7348,7 +7390,7 @@ body[data-mode="dark"] .calculator-period-select {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;
 }
 .settings-card-title-wrap { display: flex; align-items: flex-start; gap: 0.7rem; min-width: 0; }
-.settings-card-title-wrap h3 { margin: 0; font-size: 1rem; font-weight: 900; color: #2D3A47; }
+.settings-card-title-wrap h3 { margin: 0; font-size: 1rem; font-weight: 900; color: var(--theme-primary); }
 .settings-card-title-wrap p { margin: 0.15rem 0 0; font-size: 0.7rem; font-weight: 650; color: #7a868f; line-height: 1.35; }
 .settings-card-ico {
   width: 2.35rem; height: 2.35rem; border-radius: 0.85rem; flex-shrink: 0;
@@ -7392,7 +7434,16 @@ body[data-mode="dark"] .calculator-period-select {
 .settings-avatar-cam i { width: 0.75rem; height: 0.75rem; }
 .settings-profile-meta { min-width: 0; }
 .settings-profile-meta strong {
-  display: block; font-size: 1.05rem; font-weight: 900; color: #2D3A47; margin-bottom: 0.45rem;
+  display: block;
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+  font-weight: 900;
+  color: var(--theme-primary);
+  margin-bottom: 0.45rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
 }
 .settings-profile-meta p {
   margin: 0.28rem 0 0; display: flex; align-items: center; gap: 0.4rem;
@@ -7421,7 +7472,7 @@ body[data-mode="dark"] .calculator-period-select {
 }
 .settings-theme-label {
   display: block; margin-top: 0.4rem; padding: 0 0.15rem 0.1rem;
-  font-size: 0.66rem; font-weight: 800; color: #2D3A47; line-height: 1.25;
+  font-size: 0.66rem; font-weight: 800; color: var(--theme-primary); line-height: 1.25;
 }
 .settings-theme-check {
   position: absolute; top: 0.35rem; right: 0.35rem;
