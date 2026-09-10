@@ -1,0 +1,2710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinTrack Pro — Personal Finance Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+</head>
+<body class="ft-body min-h-screen flex flex-col overflow-x-hidden" id="app-body" data-theme="soft" data-mode="light">
+
+  <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+  <div id="sidebar-overlay" class="fixed inset-0 z-40 hidden" onclick="toggleSidebar(event)"></div>
+
+  <aside id="sidebar" class="ft-sidebar fixed left-0 top-0 h-full z-50 overflow-y-auto overflow-x-hidden">
+    <div class="sidebar-head border-b border-[var(--ft-border)] flex items-center justify-between">
+      <div class="flex items-center gap-3 min-w-0">
+        <div id="sidebar-head-avatar" class="theme-user-avatar sidebar-brand-icon rounded-2xl text-white font-extrabold shrink-0 flex items-center justify-center text-base">U</div>
+        <div class="sidebar-label min-w-0">
+          <p class="text-[10px] uppercase font-bold tracking-wider text-[var(--ft-muted)]">Signed in</p>
+          <h1 class="text-base font-extrabold tracking-tight text-[var(--ft-ink)] truncate leading-tight" id="sidebar-head-name">Guest</h1>
+        </div>
+      </div>
+      <button type="button" onclick="toggleSidebar(event)" class="sidebar-close-btn text-[var(--ft-muted)] hover:text-[var(--ft-ink)] p-1" aria-label="Close menu">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <button onclick="navTo('dashboard')" class="nav-side-btn" data-nav="dashboard" title="Dashboard"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Dashboard</span></button>
+      <button onclick="navTo('income')" class="nav-side-btn" data-nav="income" title="Income"><i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Income</span></button>
+      <button onclick="navTo('spending')" class="nav-side-btn" data-nav="spending" title="Spending"><i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Spending</span></button>
+      <button onclick="navTo('savings')" class="nav-side-btn" data-nav="savings" title="Savings"><i data-lucide="piggy-bank" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Savings</span></button>
+      <button onclick="navTo('investment')" class="nav-side-btn" data-nav="investment" title="Investment"><i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Investment</span></button>
+      <button onclick="navTo('protection')" class="nav-side-btn" data-nav="protection" title="Protection"><i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Protection</span></button>
+      <button onclick="navTo('goals')" class="nav-side-btn" data-nav="goals" title="Goals"><i data-lucide="target" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Goals</span></button>
+      <button onclick="navTo('analytics')" class="nav-side-btn" data-nav="analytics" title="Analytics"><i data-lucide="bar-chart-2" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Analytics</span></button>
+      <button onclick="navTo('calculator')" class="nav-side-btn" data-nav="calculator" title="Calculator"><i data-lucide="calculator" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Calculator</span></button>
+      <button onclick="navTo('settings')" class="nav-side-btn" data-nav="settings" title="Settings"><i data-lucide="settings" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Settings</span></button>
+    </nav>
+
+    <div class="sidebar-panel sidebar-stats px-4 py-3 border-t border-[var(--ft-border)]">
+      <p class="text-[10px] uppercase font-bold text-[var(--ft-muted)] mb-2 tracking-wider">Quick Stats</p>
+      <div class="space-y-2">
+        <div class="ft-stat-row"><span><i data-lucide="wallet" class="w-3.5 h-3.5 inline theme-text"></i> Balance</span><span id="sidebar-total-balance" class="font-bold theme-text">₱0.00</span></div>
+        <div class="ft-stat-row"><span><i data-lucide="target" class="w-3.5 h-3.5 inline text-[var(--ft-rosewood)]"></i> Goals</span><span id="sidebar-goals-count" class="font-bold">0</span></div>
+        <div class="ft-stat-row"><span><i data-lucide="trending-up" class="w-3.5 h-3.5 inline text-[var(--ft-sage)]"></i> Savings Rate</span><span id="sidebar-savings-rate" class="font-bold">0%</span></div>
+        <div class="ft-stat-row"><span><i data-lucide="heart-pulse" class="w-3.5 h-3.5 inline text-[var(--ft-blush)]"></i> Health</span><span id="sidebar-health-score" class="font-bold">0/100</span></div>
+      </div>
+      <p class="text-[10px] text-[var(--ft-muted)] mt-3 truncate" id="sidebar-latest-activity">Welcome to FinTrack Pro</p>
+    </div>
+
+    <div class="sidebar-panel sidebar-footer px-4 py-4 border-t border-[var(--ft-border)] mt-auto">
+      <div class="sidebar-quote">
+        <i data-lucide="sprout" class="w-4 h-4 shrink-0 sidebar-quote-ico"></i>
+        <span class="sidebar-quote-text">Small changes today, big financial wins tomorrow. ♡</span>
+        <img class="easter-sidebar-bunny easter-only" hidden src="assets/easter/bunny.png?v=1" alt="" width="120" height="120" decoding="async" aria-hidden="true">
+        <img class="halloween-sidebar-art halloween-only" hidden src="assets/halloween/pumpkin.png?v=1" alt="" width="120" height="120" decoding="async" aria-hidden="true">
+        <div class="vday-quote-deco" aria-hidden="true">
+          <span class="vday-rose vday-rose-a">🌹</span>
+          <span class="vday-rose vday-rose-b">🌹</span>
+          <span class="vday-rose vday-rose-c">🌹</span>
+          <span class="vday-float-heart h1">♥</span>
+          <span class="vday-float-heart h2">♥</span>
+          <span class="vday-float-heart h3">♥</span>
+        </div>
+      </div>
+      <div id="sidebar-auth-section">
+        <button onclick="showLoginModal(); toggleSidebar(event)" class="theme-btn-primary w-full h-11 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Sign In</span>
+        </button>
+      </div>
+      <div id="sidebar-user-section" class="hidden">
+        <p class="sidebar-label text-[10px] text-[var(--ft-muted)] truncate mb-2" id="sidebar-user-email">user@email.com</p>
+        <button onclick="handleLogout(); toggleSidebar(event)" class="w-full h-10 rounded-xl bg-[var(--ft-blush)]/30 border border-[var(--ft-rosewood)]/40 text-[var(--ft-rosewood)] font-bold text-xs flex items-center justify-center gap-2">
+          <i data-lucide="log-out" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Sign Out</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Confirm Modal -->
+  <div id="confirm-modal" class="auth-modal-overlay" style="display:none;z-index:1100;">
+    <div class="auth-modal text-center">
+      <div class="flex items-center justify-center mb-3">
+        <div class="theme-icon-bg p-3 rounded-2xl text-white"><i data-lucide="log-out" class="w-8 h-8" id="confirm-modal-icon"></i></div>
+      </div>
+      <h2 id="confirm-modal-title" class="text-center">Are you sure?</h2>
+      <p class="subtitle" id="confirm-modal-message">Please confirm this action.</p>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeConfirmModal(false)" class="ft-btn-ghost flex-1 h-11">Cancel</button>
+        <button type="button" onclick="closeConfirmModal(true)" class="theme-btn-primary flex-1 h-11 rounded-xl text-white font-extrabold text-sm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Income Add/Edit Modal -->
+  <div id="income-modal" class="auth-modal-overlay" style="display:none;z-index:1150;" onclick="if(event.target===this)closeIncomeModal()">
+    <div class="income-modal-panel" onclick="event.stopPropagation()">
+      <div class="income-modal-hero">
+        <div class="income-modal-hero-icon"><i data-lucide="wallet"></i></div>
+        <div class="income-modal-hero-copy">
+          <h2 id="income-modal-title">Add Income</h2>
+          <p>Log a new income source or update an existing one.</p>
+        </div>
+        <div class="income-modal-hero-deco" aria-hidden="true">
+          <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M78 18c-10 14-8 30-2 42 8-6 18-16 22-30-14 2-18 8-20-12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M74 34c6 8 8 18 6 28" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+            <path d="M98 48c-16 8-28 22-30 38 12 2 28-4 38-18-6-10-10-16-8-20z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M86 62c8 6 14 14 16 24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+            <path d="M62 58c-6 16 0 32 10 42 4-12 4-24-2-36-2-2-6-4-8-6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
+          </svg>
+        </div>
+        <button type="button" onclick="closeIncomeModal()" class="income-modal-close" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="income-modal-form" onsubmit="submitIncomeModal(event)" class="income-modal-form">
+        <input type="hidden" id="income-modal-edit-id" value="">
+
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="briefcase"></i> Income Source <em>*</em></span>
+          <input type="text" id="income-modal-desc" placeholder="e.g. Monthly Salary" required class="income-field-input" maxlength="80">
+        </label>
+
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="tag"></i> Income Type <em>*</em></span>
+            <select id="income-modal-type" class="income-field-input" required>
+              <option value="">Select income type</option>
+              <option value="Active">Active</option>
+              <option value="Side Business">Side Business</option>
+              <option value="Passive">Passive</option>
+            </select>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Amount <em>*</em></span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="income-modal-amount" placeholder="0.00" step="0.01" min="0" required class="income-field-input income-amount-input">
+            </div>
+          </label>
+        </div>
+
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
+            <input type="date" id="income-modal-date" required class="income-field-input">
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="file-text"></i> Description <span class="income-optional">(Optional)</span></span>
+            <textarea id="income-modal-note" class="income-field-input income-field-textarea" placeholder="Add a short description..." maxlength="200" rows="3" oninput="updateIncomeNoteCounter()"></textarea>
+            <span class="income-char-count" id="income-note-count">0/200</span>
+          </label>
+        </div>
+
+        <div class="income-modal-tip">
+          <div class="income-modal-tip-icon"><i data-lucide="sparkles"></i></div>
+          <div class="income-modal-tip-copy">
+            <strong>Keep track of your progress</strong>
+            <span>Every income counts towards your financial goals!</span>
+          </div>
+          <div class="income-modal-tip-deco" aria-hidden="true">
+            <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M58 12c-8 12-6 24-1 34 7-5 15-13 18-24-11 2-14 6-17-10z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M72 36c-12 7-22 18-24 30 10 2 22-3 30-14-5-8-8-12-6-16z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M48 46c-5 13 0 26 8 34 3-10 3-20-1-30-2-2-5-3-7-4z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="income-modal-actions">
+          <button type="button" onclick="closeIncomeModal()" class="income-btn-cancel">Cancel</button>
+          <button type="submit" id="income-modal-save" class="income-btn-save">
+            <i data-lucide="save"></i> <span id="income-modal-save-label">Save Income</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Income Delete Confirmation Modal -->
+  <div id="income-delete-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeIncomeDeleteModal()">
+    <div class="income-delete-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="income-delete-title">
+      <button type="button" onclick="closeIncomeDeleteModal()" class="income-modal-close" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="income-delete-icon" aria-hidden="true">
+        <i data-lucide="trash-2"></i>
+      </div>
+      <h2 id="income-delete-title">Delete Income Record?</h2>
+      <p id="income-delete-message" class="income-delete-message">
+        Are you sure you want to delete this record? This action cannot be undone and will recalculate your total balance.
+      </p>
+      <div class="income-delete-actions">
+        <button type="button" onclick="closeIncomeDeleteModal()" class="income-delete-cancel">Cancel</button>
+        <button type="button" onclick="confirmIncomeDelete()" class="income-delete-confirm">
+          <i data-lucide="trash-2"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expense Add/Edit Modal -->
+  <div id="expense-modal" class="auth-modal-overlay" style="display:none;z-index:1150;" onclick="if(event.target===this)closeExpenseModal()">
+    <div class="income-modal-panel" onclick="event.stopPropagation()">
+      <div class="income-modal-hero">
+        <div class="income-modal-hero-icon"><i data-lucide="receipt"></i></div>
+        <div class="income-modal-hero-copy">
+          <h2 id="expense-modal-title">Add Expense</h2>
+          <p id="expense-modal-subtitle">Log a new expense or update an existing one.</p>
+        </div>
+        <div class="income-modal-hero-deco" aria-hidden="true">
+          <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M78 18c-10 14-8 30-2 42 8-6 18-16 22-30-14 2-18 8-20-12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M98 48c-16 8-28 22-30 38 12 2 28-4 38-18-6-10-10-16-8-20z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M62 58c-6 16 0 32 10 42 4-12 4-24-2-36-2-2-6-4-8-6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
+          </svg>
+        </div>
+        <button type="button" onclick="closeExpenseModal()" class="income-modal-close" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="expense-modal-form" onsubmit="submitExpenseModal(event)" class="income-modal-form">
+        <input type="hidden" id="expense-modal-edit-id" value="">
+
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="file-text"></i> Description <em>*</em></span>
+          <input type="text" id="expense-modal-desc" placeholder="e.g. Food & Groceries" required class="income-field-input" maxlength="80">
+        </label>
+
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="tag"></i> Category <em>*</em></span>
+            <select id="expense-modal-category" class="income-field-input" required>
+              <option value="Food">Food</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Rent">Rent</option>
+              <option value="Bills">Bills</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Education">Education</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Health">Health</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Amount <em>*</em></span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="expense-modal-amount" placeholder="0.00" step="0.01" min="0" required class="income-field-input income-amount-input">
+            </div>
+          </label>
+        </div>
+
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="scale"></i> Type <em>*</em></span>
+            <select id="expense-modal-needwant" class="income-field-input" required>
+              <option value="Need">Need</option>
+              <option value="Want">Want</option>
+            </select>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
+            <input type="date" id="expense-modal-date" required class="income-field-input">
+          </label>
+        </div>
+
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="smile"></i> Mood <em>*</em></span>
+          <select id="expense-modal-mood" class="income-field-input" required>
+            <option value="Happy">😊 Happy</option>
+            <option value="Stressed">😫 Stressed</option>
+            <option value="Treating Myself">😎 Treating Myself</option>
+            <option value="Necessary">😐 Necessary</option>
+          </select>
+        </label>
+
+        <div class="income-modal-tip">
+          <div class="income-modal-tip-icon"><i data-lucide="sparkles"></i></div>
+          <div class="income-modal-tip-copy">
+            <strong>Mindful spending</strong>
+            <span>Tagging mood helps you spot emotional spending patterns.</span>
+          </div>
+        </div>
+
+        <div class="income-modal-actions">
+          <button type="button" onclick="closeExpenseModal()" class="income-btn-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save">
+            <i data-lucide="save"></i> <span id="expense-modal-save-label">Save Expense</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Expense Delete Confirmation Modal -->
+  <div id="expense-delete-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeExpenseDeleteModal()">
+    <div class="income-delete-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="expense-delete-title">
+      <button type="button" onclick="closeExpenseDeleteModal()" class="income-modal-close" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="income-delete-icon" aria-hidden="true">
+        <i data-lucide="trash-2"></i>
+      </div>
+      <h2 id="expense-delete-title">Delete Expense Record?</h2>
+      <p id="expense-delete-message" class="income-delete-message">
+        Are you sure you want to delete this record? This action cannot be undone and will recalculate your totals.
+      </p>
+      <div class="income-delete-actions">
+        <button type="button" onclick="closeExpenseDeleteModal()" class="income-delete-cancel">Cancel</button>
+        <button type="button" onclick="confirmExpenseDelete()" class="income-delete-confirm">
+          <i data-lucide="trash-2"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Budget Limit Modal -->
+  <div id="budget-limit-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeBudgetLimitModal()">
+    <div class="income-delete-panel budget-limit-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="budget-limit-title">
+      <button type="button" onclick="closeBudgetLimitModal()" class="income-modal-close" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="budget-limit-icon" aria-hidden="true">
+        <i data-lucide="target"></i>
+      </div>
+      <h2 id="budget-limit-title">Set Spending Limit</h2>
+      <p class="income-delete-message">Enter your monthly budget limit. This drives the progress bar and remaining balance on Spending.</p>
+      <form onsubmit="submitBudgetLimit(event)" class="budget-limit-form">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="coins"></i> Monthly limit <em>*</em></span>
+          <div class="income-amount-wrap">
+            <span class="income-amount-prefix">₱</span>
+            <input type="number" id="budget-limit-input" placeholder="15000" step="0.01" min="0" required class="income-field-input income-amount-input">
+          </div>
+        </label>
+        <div class="income-delete-actions">
+          <button type="button" onclick="closeBudgetLimitModal()" class="income-delete-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save" style="height:2.75rem;border-radius:999px;">
+            <i data-lucide="check"></i> Save Limit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Expense Alert Threshold Modal -->
+  <div id="expense-alert-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeExpenseAlertModal()">
+    <div class="income-delete-panel budget-limit-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="expense-alert-title">
+      <button type="button" onclick="closeExpenseAlertModal()" class="income-modal-close" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="budget-limit-icon" aria-hidden="true">
+        <i data-lucide="bell-ring"></i>
+      </div>
+      <h2 id="expense-alert-title">High Spending Alert</h2>
+      <p class="income-delete-message">Get alerted when any single expense is greater than or equal to this amount. You can change it anytime.</p>
+      <form onsubmit="submitExpenseAlertThreshold(event)" class="budget-limit-form">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="coins"></i> Alert when spending ≥ <em>*</em></span>
+          <div class="income-amount-wrap">
+            <span class="income-amount-prefix">₱</span>
+            <input type="number" id="expense-alert-input" placeholder="2000" step="0.01" min="0" required class="income-field-input income-amount-input">
+          </div>
+        </label>
+        <div class="income-delete-actions">
+          <button type="button" onclick="closeExpenseAlertModal()" class="income-delete-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save" style="height:2.75rem;border-radius:999px;">
+            <i data-lucide="check"></i> Save Alert
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Savings Add/Edit Modal -->
+  <div id="savings-modal" class="auth-modal-overlay" style="display:none;z-index:1150;" onclick="if(event.target===this)closeSavingsModal()">
+    <div class="income-modal-panel" onclick="event.stopPropagation()">
+      <div class="income-modal-hero">
+        <div class="income-modal-hero-icon"><i data-lucide="piggy-bank"></i></div>
+        <div class="income-modal-hero-copy">
+          <h2 id="savings-modal-title">Add Savings</h2>
+          <p id="savings-modal-subtitle">Log a savings account or update an existing one.</p>
+        </div>
+        <button type="button" onclick="closeSavingsModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <form id="savings-modal-form" onsubmit="submitSavingsModal(event)" class="income-modal-form" novalidate>
+        <input type="hidden" id="savings-modal-edit-id" value="">
+        <input type="hidden" id="savings-modal-mode" value="goal">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="file-text"></i> Description / Goal <em>*</em></span>
+          <input type="text" id="savings-modal-desc" class="income-field-input" placeholder="e.g. Emergency Vault" required maxlength="80">
+        </label>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Amount saved <em>*</em></span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="savings-modal-amount" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0" required>
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="repeat"></i> Monthly contribution</span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="savings-modal-monthly" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </label>
+        </div>
+        <div class="income-field-grid" id="savings-modal-goal-fields">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="target"></i> Target <em id="savings-target-req">*</em></span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="savings-modal-target" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar-clock"></i> Due date <em id="savings-due-req">*</em></span>
+            <input type="date" id="savings-modal-due" class="income-field-input">
+          </label>
+        </div>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="landmark"></i> Account <em>*</em></span>
+            <select id="savings-modal-account" class="income-field-input" required>
+              <option>Digital Bank</option><option>Traditional Bank</option><option>E-Wallet</option><option>Cash Vault</option>
+            </select>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="tag"></i> Category <em>*</em></span>
+            <select id="savings-modal-category" class="income-field-input" required>
+              <option value="Emergency Fund">Emergency Fund</option>
+              <option value="Short-Term">Short-Term</option>
+              <option value="Medium Savings">Medium Savings</option>
+              <option value="Long-Term">Long-Term</option>
+              <option value="Education">Education</option>
+              <option value="Travel">Travel</option>
+              <option value="Business">Business</option>
+            </select>
+          </label>
+        </div>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
+            <input type="date" id="savings-modal-date" class="income-field-input" required>
+          </label>
+          <label class="income-field" style="display:flex;align-items:flex-end;">
+            <span class="sav-check-label"><input type="checkbox" id="savings-modal-emergency"> Emergency Fund</span>
+          </label>
+        </div>
+        <div class="income-modal-actions">
+          <button type="button" onclick="closeSavingsModal()" class="income-btn-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save"><i data-lucide="save"></i> <span id="savings-modal-save-label">Save Savings</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Savings Goal Modal -->
+  <div id="savings-goal-modal" class="auth-modal-overlay" style="display:none;z-index:1150;" onclick="if(event.target===this)closeSavingsGoalModal()">
+    <div class="income-modal-panel" onclick="event.stopPropagation()">
+      <div class="income-modal-hero">
+        <div class="income-modal-hero-icon"><i data-lucide="target"></i></div>
+        <div class="income-modal-hero-copy">
+          <h2 id="savings-goal-modal-title">Add Goal</h2>
+          <p>Set a savings goal with a target and due date.</p>
+        </div>
+        <button type="button" onclick="closeSavingsGoalModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <form onsubmit="submitSavingsGoalModal(event)" class="income-modal-form">
+        <input type="hidden" id="savings-goal-edit-id" value="">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="flag"></i> Goal name <em>*</em></span>
+          <input type="text" id="savings-goal-desc" class="income-field-input" placeholder="e.g. Emergency Fund" required>
+        </label>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Current <em>*</em></span>
+            <div class="income-amount-wrap"><span class="income-amount-prefix">₱</span>
+              <input type="number" id="savings-goal-current" class="income-field-input income-amount-input" min="0" step="0.01" required>
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="target"></i> Target <em>*</em></span>
+            <div class="income-amount-wrap"><span class="income-amount-prefix">₱</span>
+              <input type="number" id="savings-goal-target" class="income-field-input income-amount-input" min="0" step="0.01" required>
+            </div>
+          </label>
+        </div>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="repeat"></i> Monthly</span>
+            <div class="income-amount-wrap"><span class="income-amount-prefix">₱</span>
+              <input type="number" id="savings-goal-monthly" class="income-field-input income-amount-input" min="0" step="0.01">
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Due date</span>
+            <input type="date" id="savings-goal-due" class="income-field-input">
+          </label>
+        </div>
+        <div class="income-modal-actions">
+          <button type="button" onclick="closeSavingsGoalModal()" class="income-btn-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save"><i data-lucide="save"></i> <span id="savings-goal-save-label">Save Goal</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Overall Savings Target Modal -->
+  <div id="savings-target-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeSavingsTargetModal()">
+    <div class="income-delete-panel budget-limit-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <button type="button" onclick="closeSavingsTargetModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      <div class="budget-limit-icon" aria-hidden="true"><i data-lucide="target"></i></div>
+      <h2>Set Overall Savings Target</h2>
+      <p class="income-delete-message">This is your big-picture savings goal shown in the sidebar progress card.</p>
+      <form onsubmit="submitSavingsTargetModal(event)" class="budget-limit-form">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="coins"></i> Overall target <em>*</em></span>
+          <div class="income-amount-wrap">
+            <span class="income-amount-prefix">₱</span>
+            <input type="number" id="savings-target-input" class="income-field-input income-amount-input" min="0" step="0.01" required placeholder="150000">
+          </div>
+        </label>
+        <div class="income-delete-actions">
+          <button type="button" onclick="closeSavingsTargetModal()" class="income-delete-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save" style="height:2.75rem;border-radius:999px;"><i data-lucide="check"></i> Save Target</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Savings Delete Modal -->
+  <div id="savings-delete-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeSavingsDeleteModal()">
+    <div class="income-delete-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <button type="button" onclick="closeSavingsDeleteModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      <div class="income-delete-icon" aria-hidden="true"><i data-lucide="trash-2"></i></div>
+      <h2>Delete Savings Record?</h2>
+      <p id="savings-delete-message" class="income-delete-message">Are you sure?</p>
+      <div class="income-delete-actions">
+        <button type="button" onclick="closeSavingsDeleteModal()" class="income-delete-cancel">Cancel</button>
+        <button type="button" onclick="confirmSavingsDelete()" class="income-delete-confirm"><i data-lucide="trash-2"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Investment Add/Edit Modal -->
+  <div id="investment-modal" class="auth-modal-overlay" style="display:none;z-index:1150;" onclick="if(event.target===this)closeInvestmentModal()">
+    <div class="income-modal-panel" onclick="event.stopPropagation()">
+      <div class="income-modal-hero">
+        <div class="income-modal-hero-icon"><i data-lucide="line-chart"></i></div>
+        <div class="income-modal-hero-copy">
+          <h2 id="investment-modal-title">Add Investment</h2>
+          <p id="investment-modal-subtitle">Log an asset or update an existing holding.</p>
+        </div>
+        <button type="button" onclick="closeInvestmentModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <form id="investment-modal-form" onsubmit="submitInvestmentModal(event)" class="income-modal-form" novalidate>
+        <input type="hidden" id="investment-modal-edit-id" value="">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="briefcase"></i> Asset / Fund <em>*</em></span>
+          <input type="text" id="investment-modal-desc" class="income-field-input" placeholder="e.g. Pag-IBIG MP2" required maxlength="80">
+        </label>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Initial amount <em>*</em></span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="investment-modal-amount" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0" required>
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Current value</span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="investment-modal-current" class="income-field-input income-amount-input" placeholder="Same as amount" step="0.01" min="0">
+            </div>
+          </label>
+        </div>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="repeat"></i> Monthly contribution</span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="investment-modal-monthly" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="percent"></i> Est. annual return %</span>
+            <input type="number" id="investment-modal-return" class="income-field-input" placeholder="e.g. 8" step="0.1" min="0" max="100">
+          </label>
+        </div>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="tag"></i> Category <em>*</em></span>
+            <select id="investment-modal-category" class="income-field-input" required>
+              <option value="Stocks/Funds">Stocks/Funds</option>
+              <option value="Bonds/Fixed Income">Bonds/Fixed Income</option>
+              <option value="Business">Business</option>
+              <option value="Property">Property</option>
+              <option value="Cash/Short-Term">Cash/Short-Term</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
+            <input type="date" id="investment-modal-date" class="income-field-input" required>
+          </label>
+        </div>
+        <div class="income-modal-tip">
+          <div class="income-modal-tip-icon"><i data-lucide="sparkles"></i></div>
+          <div class="income-modal-tip-copy">
+            <strong>Tip</strong>
+            <span>Leave Current value blank to estimate growth from date + return rate.</span>
+          </div>
+        </div>
+        <div class="income-modal-actions">
+          <button type="button" onclick="closeInvestmentModal()" class="income-btn-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save"><i data-lucide="save"></i> <span id="investment-modal-save-label">Save Investment</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Investment Delete Modal -->
+  <div id="investment-delete-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeInvestmentDeleteModal()">
+    <div class="income-delete-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <button type="button" onclick="closeInvestmentDeleteModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      <div class="income-delete-icon" aria-hidden="true"><i data-lucide="trash-2"></i></div>
+      <h2>Delete Investment?</h2>
+      <p id="investment-delete-message" class="income-delete-message">Are you sure you want to delete this investment?</p>
+      <div class="income-delete-actions">
+        <button type="button" onclick="closeInvestmentDeleteModal()" class="income-delete-cancel">Cancel</button>
+        <button type="button" onclick="confirmInvestmentDelete()" class="income-delete-confirm"><i data-lucide="trash-2"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Protection Add/Edit Modal -->
+  <div id="protection-modal" class="auth-modal-overlay" style="display:none;z-index:1150;" onclick="if(event.target===this)closeProtectionModal()">
+    <div class="income-modal-panel" onclick="event.stopPropagation()">
+      <div class="income-modal-hero">
+        <div class="income-modal-hero-icon"><i data-lucide="shield-check"></i></div>
+        <div class="income-modal-hero-copy">
+          <h2 id="protection-modal-title">Add Protection</h2>
+          <p id="protection-modal-subtitle">Log a policy or update existing coverage.</p>
+        </div>
+        <button type="button" onclick="closeProtectionModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <form id="protection-modal-form" onsubmit="submitProtectionModal(event)" class="income-modal-form" novalidate>
+        <input type="hidden" id="protection-modal-edit-id" value="">
+        <label class="income-field income-field-full">
+          <span class="income-field-label"><i data-lucide="file-text"></i> Policy name <em>*</em></span>
+          <input type="text" id="protection-modal-desc" class="income-field-input" placeholder="e.g. PhilHealth" required maxlength="80">
+        </label>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="coins"></i> Coverage / Value <em>*</em></span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="protection-modal-amount" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0" required>
+            </div>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="repeat"></i> Monthly cost</span>
+            <div class="income-amount-wrap">
+              <span class="income-amount-prefix">₱</span>
+              <input type="number" id="protection-modal-monthly" class="income-field-input income-amount-input" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </label>
+        </div>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="tag"></i> Policy type <em>*</em></span>
+            <select id="protection-modal-type" class="income-field-input" required>
+              <option value="Health">Health</option>
+              <option value="Life">Life</option>
+              <option value="Property">Property</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Emergency Fund">Emergency Fund</option>
+            </select>
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
+            <input type="date" id="protection-modal-date" class="income-field-input" required>
+          </label>
+        </div>
+        <div class="income-modal-actions">
+          <button type="button" onclick="closeProtectionModal()" class="income-btn-cancel">Cancel</button>
+          <button type="submit" class="income-btn-save"><i data-lucide="save"></i> <span id="protection-modal-save-label">Save Protection</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Protection Delete Modal -->
+  <div id="protection-delete-modal" class="auth-modal-overlay" style="display:none;z-index:1160;" onclick="if(event.target===this)closeProtectionDeleteModal()">
+    <div class="income-delete-panel" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <button type="button" onclick="closeProtectionDeleteModal()" class="income-modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+      <div class="income-delete-icon" aria-hidden="true"><i data-lucide="trash-2"></i></div>
+      <h2>Delete Protection?</h2>
+      <p id="protection-delete-message" class="income-delete-message">Are you sure you want to delete this policy?</p>
+      <div class="income-delete-actions">
+        <button type="button" onclick="closeProtectionDeleteModal()" class="income-delete-cancel">Cancel</button>
+        <button type="button" onclick="confirmProtectionDelete()" class="income-delete-confirm"><i data-lucide="trash-2"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login / Register Modal -->
+  <div id="login-modal" class="auth-modal-overlay" style="display:none;z-index:1200;">
+    <div class="auth-modal login-modal-content">
+      <button onclick="closeLoginModal()" class="close-modal-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div class="modal-header">
+        <div class="modal-icon pulse-icon"><i data-lucide="user" class="w-6 h-6"></i></div>
+        <div>
+          <h2 class="modal-title">Welcome Back</h2>
+          <p class="modal-subtitle">Sign in to continue your journey</p>
+        </div>
+      </div>
+      <div class="tabs-container">
+        <button onclick="switchLoginTab('login')" id="login-tab-btn" class="tab-btn active"><i data-lucide="log-in" class="w-4 h-4"></i> Login</button>
+        <button onclick="switchLoginTab('register')" id="register-tab-btn" class="tab-btn"><i data-lucide="user-plus" class="w-4 h-4"></i> Sign Up</button>
+      </div>
+      <form id="login-form" onsubmit="handleLoginForm(event)" class="auth-form active">
+        <div class="input-group">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input type="email" id="login-email" placeholder="Email Address" required>
+        </div>
+        <div class="input-group">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="login-password" placeholder="Password" required minlength="4">
+          <button type="button" onclick="togglePasswordVisibility('login-password')" class="password-toggle"><i data-lucide="eye" class="w-4 h-4"></i></button>
+        </div>
+        <div class="form-options">
+          <label class="remember-me"><input type="checkbox" checked><span>Remember me</span></label>
+          <button type="button" class="forgot-password" onclick="openForgotPassword()">Forgot Password?</button>
+        </div>
+        <button type="submit" class="submit-btn"><i data-lucide="log-in" class="w-4 h-4"></i> Sign In</button>
+      </form>
+      <form id="register-form" onsubmit="handleRegisterForm(event)" class="auth-form">
+        <div class="input-group"><i data-lucide="user" class="input-icon"></i><input type="text" id="register-firstname" placeholder="First Name" required></div>
+        <div class="input-group"><i data-lucide="user" class="input-icon"></i><input type="text" id="register-lastname" placeholder="Last Name" required></div>
+        <div class="input-group"><i data-lucide="mail" class="input-icon"></i><input type="email" id="register-email" placeholder="Email Address" required></div>
+        <div class="input-group">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="register-password" placeholder="Password" required minlength="8">
+          <button type="button" onclick="togglePasswordVisibility('register-password')" class="password-toggle"><i data-lucide="eye" class="w-4 h-4"></i></button>
+        </div>
+        <div class="input-group">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="register-confirm-password" placeholder="Confirm Password" required>
+          <button type="button" onclick="togglePasswordVisibility('register-confirm-password')" class="password-toggle"><i data-lucide="eye" class="w-4 h-4"></i></button>
+        </div>
+        <div id="register-strength" class="password-strength"></div>
+        <div id="register-feedback" class="password-feedback"></div>
+        <button type="submit" class="submit-btn"><i data-lucide="user-plus" class="w-4 h-4"></i> Create Account</button>
+      </form>
+      <div class="divider-container"><span class="divider-text">Or continue with</span></div>
+      <div class="social-buttons">
+        <button type="button" class="social-btn google-btn" onclick="handleSocialLogin('google')">
+          <svg class="social-icon" viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+          <span class="social-btn-text">Google</span>
+        </button>
+        <button type="button" class="social-btn facebook-btn" onclick="handleSocialLogin('facebook')">
+          <svg class="social-icon" viewBox="0 0 48 48" width="20" height="20"><path fill="#1877F2" d="M24 5C13.5 5 5 13.5 5 24c0 9.5 7 17.3 16 18.7V29.5h-4.5V24H21v-4c0-4.5 2.7-7 6.8-7 2 0 4 .4 4 .4v4.5h-2.3c-2.2 0-2.9 1.4-2.9 2.8V24h5l-.8 5.5H26.6V42.7C35.6 41.3 43 33.5 43 24c0-10.5-8.5-19-19-19z"/><path fill="#FFFFFF" d="M29.2 29.5L30 24h-4.9v-3.8c0-1.4.7-2.7 2.8-2.7h2.2V13s-2-.4-4-.4c-4.1 0-6.8 2.6-6.8 7V24h-4.6v5.5H19.3v13.2c1.5.3 3.1.3 4.7 0V29.5h5.2z"/></svg>
+          <span class="social-btn-text">Facebook</span>
+        </button>
+      </div>
+      <div class="auth-footer">
+        <p id="login-footer" class="footer-text">Don't have an account? <button onclick="switchLoginTab('register')" class="footer-link">Sign Up Now</button></p>
+        <p id="register-footer" class="footer-text" style="display:none;">Already have an account? <button onclick="switchLoginTab('login')" class="footer-link">Login Now</button></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgot-modal" class="auth-modal-overlay" style="display:none;z-index:1250;">
+    <div class="auth-modal login-modal-content">
+      <button onclick="closeForgotPassword()" class="close-modal-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div class="modal-header">
+        <div class="modal-icon"><i data-lucide="key-round" class="w-6 h-6"></i></div>
+        <div>
+          <h2 class="modal-title">Reset Password</h2>
+          <p class="modal-subtitle">Client-side reset (localStorage only — no email sent)</p>
+        </div>
+      </div>
+      <div id="forgot-step-email">
+        <div class="input-group"><i data-lucide="mail" class="input-icon"></i><input type="email" id="forgot-email" placeholder="Registered Email" required></div>
+        <button type="button" class="submit-btn" onclick="forgotLookupEmail()"><i data-lucide="search" class="w-4 h-4"></i> Find Account</button>
+      </div>
+      <div id="forgot-step-reset" class="hidden">
+        <p class="text-xs text-[var(--ft-muted)] mb-3">Account found for <strong id="forgot-found-email"></strong>. Set a new password:</p>
+        <div class="input-group">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="forgot-new-password" placeholder="New Password" minlength="8">
+          <button type="button" onclick="togglePasswordVisibility('forgot-new-password')" class="password-toggle"><i data-lucide="eye" class="w-4 h-4"></i></button>
+        </div>
+        <div class="input-group">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="forgot-confirm-password" placeholder="Confirm New Password">
+          <button type="button" onclick="togglePasswordVisibility('forgot-confirm-password')" class="password-toggle"><i data-lucide="eye" class="w-4 h-4"></i></button>
+        </div>
+        <button type="button" class="submit-btn" onclick="forgotResetPassword()"><i data-lucide="check" class="w-4 h-4"></i> Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tutorial Overlay (coach mark — page stays visible underneath) -->
+  <div id="tutorial-overlay" class="tutorial-overlay hidden">
+    <div class="tutorial-card">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold theme-badge px-2 py-1 rounded-full" id="tutorial-step-label">Step 1/7</span>
+        <button onclick="skipTutorial()" class="text-[var(--ft-muted)] text-xs hover:underline">Skip</button>
+      </div>
+      <h3 class="text-lg font-extrabold text-[var(--ft-ink)] mb-2" id="tutorial-title">Welcome</h3>
+      <p class="text-sm text-[var(--ft-muted)] leading-relaxed mb-3" id="tutorial-body">Learn the basics.</p>
+      <p class="text-[11px] font-bold theme-text mb-4" id="tutorial-go-view">Open page</p>
+      <div class="flex gap-2">
+        <button onclick="prevTutorial()" id="tutorial-prev" class="ft-btn-ghost flex-1 h-10 text-sm">Back</button>
+        <button onclick="nextTutorial()" id="tutorial-next" class="theme-btn-primary flex-1 h-10 rounded-xl text-white font-bold text-sm">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Achievement Popup -->
+  <div id="achievement-popup" class="achievement-popup hidden">
+    <div class="achievement-sticker" id="achievement-emoji">🏆</div>
+    <div>
+      <p class="text-[10px] uppercase font-bold tracking-wider theme-text">Achievement Unlocked</p>
+      <h4 class="font-extrabold text-[var(--ft-ink)]" id="achievement-title">First Steps</h4>
+      <p class="text-xs text-[var(--ft-muted)]" id="achievement-desc">You did it!</p>
+    </div>
+  </div>
+
+  <header class="ft-header relative z-30 sticky top-0">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <button type="button" id="header-menu-btn" onclick="toggleSidebar(event)" class="ft-icon-btn shrink-0" aria-label="Open menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <div class="theme-icon-bg p-2.5 rounded-2xl text-white shrink-0 flex items-center justify-center"><i data-lucide="wallet-cards" class="w-5 h-5"></i></div>
+        <div class="min-w-0 flex items-center gap-2">
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-[var(--ft-ink)] truncate">FinTrack <span class="theme-text">Pro</span></h1>
+          <span id="seasonal-badge" class="seasonal-badge hidden text-[10px] font-bold px-2 py-0.5 rounded-full"></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 relative">
+        <button type="button" id="mode-toggle-btn" onclick="toggleColorMode()" class="ft-icon-btn" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+          <i data-lucide="moon" id="mode-toggle-icon" class="w-5 h-5"></i>
+        </button>
+        <div class="header-notif-wrap relative">
+          <button type="button" id="header-notif-btn" onclick="toggleNotificationsDropdown(event)" class="ft-icon-btn relative" title="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notif-dropdown">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="notif-dot" class="notif-dot hidden"></span>
+            <span id="notif-count" class="notif-count hidden">0</span>
+          </button>
+          <div id="notif-dropdown" class="notif-dropdown" role="menu" aria-label="Notifications" hidden>
+            <div class="notif-dropdown-head">
+              <p class="notif-dropdown-title">Notifications</p>
+              <button type="button" class="notif-mark-read" onclick="markAllNotificationsRead(event)">Mark all as read</button>
+            </div>
+            <div id="notifications-list" class="notif-dropdown-list"></div>
+          </div>
+        </div>
+        <div id="user-section" style="display:none;">
+          <div class="user-badge" onclick="toggleUserDropdown()">
+            <div class="theme-user-avatar w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-sm text-white shrink-0" id="user-avatar">U</div>
+            <span class="user-name" id="user-display-name">User</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--ft-muted)]"></i>
+          </div>
+          <div class="user-dropdown" id="user-dropdown">
+            <button onclick="navigateTo('dashboard'); document.getElementById('user-dropdown').classList.remove('active')"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
+            <button onclick="navigateTo('settings'); document.getElementById('user-dropdown').classList.remove('active')"><i data-lucide="settings" class="w-4 h-4"></i> Settings</button>
+            <div class="divider"></div>
+            <button onclick="handleLogout()" class="text-rose-500"><i data-lucide="log-out" class="w-4 h-4"></i> Sign Out</button>
+          </div>
+        </div>
+        <button id="auth-btn-nav" onclick="showLoginModal()" class="theme-btn-primary h-9 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-2 text-white">
+          <i data-lucide="log-in" class="w-4 h-4"></i> <span>Sign In</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full">
+
+    <!-- WELCOME — dark hero landing (no personal data) -->
+    <section id="view-welcome" class="landing-page">
+      <div class="landing-wrap">
+        <div class="landing-hero">
+          <div class="landing-glow landing-glow-a" aria-hidden="true"></div>
+          <div class="landing-glow landing-glow-b" aria-hidden="true"></div>
+
+          <div class="landing-hero-content">
+            <div class="landing-badge">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              Personal Finance Web Hub
+            </div>
+
+            <h1 class="landing-title">
+              Master Your Wealth &amp;
+              <span class="landing-title-accent">Track Equipment.</span>
+            </h1>
+
+            <p class="landing-desc">
+              Welcome to FinTrack Pro. Sign in to open your dashboard — track income, spending, savings, investments, protection, and goals in one place.
+            </p>
+
+            <div class="landing-actions">
+              <button type="button" onclick="showLoginModal()" class="landing-btn landing-btn-primary">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                Open Dashboard
+              </button>
+              <button type="button" onclick="showLoginModal(); switchLoginTab('register')" class="landing-btn landing-btn-ghost">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                Create Account
+              </button>
+              <button type="button" onclick="showLoginModal()" class="landing-btn landing-btn-sample" id="landing-sample-hint-btn">
+                <i data-lucide="database" class="w-4 h-4"></i>
+                Load Sample Data
+              </button>
+            </div>
+
+            <p class="landing-hint">Sign in first to load sample data and explore the dashboard.</p>
+          </div>
+        </div>
+
+        <div class="landing-how reveal-on-scroll" id="landing-how">
+          <h2 class="landing-how-title">How FinTrack Pro Works</h2>
+          <div class="landing-how-grid">
+            <article class="landing-how-card">
+              <div class="landing-how-icon" aria-hidden="true">
+                <i data-lucide="link-2" class="w-6 h-6"></i>
+              </div>
+              <h3>1. Connect Accounts</h3>
+              <p>Securely link your bank, credit card, and investment accounts in minutes.</p>
+            </article>
+            <article class="landing-how-card">
+              <div class="landing-how-icon" aria-hidden="true">
+                <i data-lucide="refresh-cw" class="w-6 h-6"></i>
+              </div>
+              <h3>2. Automate Tracking</h3>
+              <p>Your transactions are automatically categorized and updated in real-time.</p>
+            </article>
+            <article class="landing-how-card">
+              <div class="landing-how-icon" aria-hidden="true">
+                <i data-lucide="target" class="w-6 h-6"></i>
+              </div>
+              <h3>3. Set &amp; Achieve Goals</h3>
+              <p>Create budgets, define financial goals, and monitor your progress daily.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="app-views" class="max-w-7xl mx-auto px-4 pt-8 pb-6 space-y-6 hidden relative">
+
+    <div id="vday-page-decor" class="vday-global-decor vday-only" hidden aria-hidden="true">
+      <div class="vday-ribbon vday-ribbon-top"></div>
+      <div class="vday-ribbon vday-ribbon-side"></div>
+      <span class="vday-bg-heart h-a">♥</span>
+      <span class="vday-bg-heart h-b">♥</span>
+      <span class="vday-bg-heart h-c">♥</span>
+      <span class="vday-bg-heart h-d">♥</span>
+      <span class="vday-bg-heart h-e">♥</span>
+      <span class="vday-bg-heart h-f">♥</span>
+      <span class="vday-bg-heart h-g">♥</span>
+      <span class="vday-bg-petal p-a">❀</span>
+      <span class="vday-bg-petal p-b">❀</span>
+      <span class="vday-bg-petal p-c">❀</span>
+      <div class="vday-corner-top">
+        <span class="vday-corner-rose">🌹</span>
+        <span class="vday-corner-rose r2">🌹</span>
+      </div>
+      <div class="vday-corner-stack">
+        <span class="vday-corner-ribbon">♡</span>
+        <span class="vday-corner-roses">🌹🌹</span>
+      </div>
+    </div>
+
+    <div id="xmas-page-decor" class="xmas-global-decor xmas-only" hidden aria-hidden="true">
+      <div class="xmas-snow-layer"></div>
+      <img class="xmas-corner-img xmas-corner-tr" src="assets/xmas/corner-pine.png?v=6" alt="" width="180" height="180" decoding="async">
+      <img class="xmas-corner-img xmas-corner-br" src="assets/xmas/corner-pine.png?v=6" alt="" width="200" height="200" decoding="async">
+      <img class="xmas-holly-float h1" src="assets/xmas/holly-mini.png?v=6" alt="" width="72" height="72" decoding="async">
+      <img class="xmas-holly-float h2" src="assets/xmas/holly-mini.png?v=6" alt="" width="56" height="56" decoding="async">
+    </div>
+
+    <div id="easter-page-decor" class="easter-global-decor easter-only" hidden aria-hidden="true">
+      <img class="easter-float easter-float-tr" src="assets/easter/flower-mini.png?v=1" alt="" width="88" height="88" decoding="async">
+      <img class="easter-float easter-float-br" src="assets/easter/egg-mini.png?v=1" alt="" width="96" height="96" decoding="async">
+      <img class="easter-float easter-float-ml" src="assets/easter/egg-mini.png?v=1" alt="" width="64" height="64" decoding="async">
+      <img class="easter-float easter-float-mr" src="assets/easter/flower-mini.png?v=1" alt="" width="72" height="72" decoding="async">
+    </div>
+
+    <div id="halloween-page-decor" class="halloween-global-decor halloween-only" hidden aria-hidden="true">
+      <div class="halloween-web halloween-web-tl" aria-hidden="true"></div>
+      <div class="halloween-web halloween-web-tr" aria-hidden="true"></div>
+      <img class="halloween-float halloween-float-tr" src="assets/halloween/bat.png?v=1" alt="" width="88" height="88" decoding="async">
+      <img class="halloween-float halloween-float-br" src="assets/halloween/pumpkin.png?v=1" alt="" width="110" height="110" decoding="async">
+      <img class="halloween-float halloween-float-ml" src="assets/halloween/ghost.png?v=3" alt="" width="64" height="64" decoding="async">
+      <img class="halloween-float halloween-float-mr" src="assets/halloween/bat.png?v=1" alt="" width="72" height="72" decoding="async">
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="hidden">
+      <div class="dash-layout">
+        <div class="dash-main-col">
+          <div class="dash-hero-banner">
+            <div class="dash-hero-banner-copy">
+              <p class="dash-welcome-label" id="dash-time-label">Dashboard</p>
+              <h2 class="dash-welcome-title" id="dash-greeting">Hey there!</h2>
+              <p class="dash-welcome-sub" id="dash-greeting-sub">Add income or load sample data to unlock your snapshot.</p>
+              <div class="dash-welcome-actions">
+                <button type="button" onclick="toggleSampleData()" id="dash-toggle-sample-btn" class="dash-welcome-btn">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i> Load Sample Data
+                </button>
+                <span class="vday-hero-chip vday-only" hidden>Happy Valentine's Day! ❤️</span>
+                <span class="xmas-hero-chip xmas-only" hidden>Merry Christmas!</span>
+                <span class="easter-hero-chip easter-only" hidden>Happy Easter! 🍃</span>
+                <span class="halloween-hero-chip halloween-only" hidden>Happy Halloween! 🎃</span>
+              </div>
+            </div>
+            <div class="dash-hero-banner-deco" aria-hidden="true"></div>
+            <div class="vday-hero-art vday-only" aria-hidden="true" hidden>
+              <div class="vday-gift-box">
+                <div class="vday-gift-lid"></div>
+                <div class="vday-gift-body"></div>
+                <div class="vday-gift-bow"></div>
+                <div class="vday-gift-tag">Love your future ❤️</div>
+              </div>
+              <div class="vday-hero-roses">🌹🌹🌹</div>
+              <span class="vday-spark s1">♥</span>
+              <span class="vday-spark s2">♥</span>
+              <span class="vday-spark s3">♥</span>
+            </div>
+            <div class="xmas-hero-art xmas-only" aria-hidden="true" hidden>
+              <img class="xmas-hero-img" src="assets/xmas/hero-scene.png?v=11" alt="" width="420" height="236" decoding="async">
+            </div>
+            <div class="easter-hero-art easter-only" aria-hidden="true" hidden>
+              <img class="easter-hero-img" src="assets/easter/hero-scene.png?v=2" alt="" width="420" height="236" decoding="async">
+            </div>
+            <div class="halloween-hero-art halloween-only" aria-hidden="true" hidden>
+              <img class="halloween-hero-img" src="assets/halloween/hero-scene.png?v=4" alt="" width="420" height="236" decoding="async">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 dash-stats-row">
+            <button type="button" class="ft-card dash-metric-card is-income text-left w-full dash-nav-card" id="card-income" onclick="navigateTo('income')" title="Go to Income">
+              <span class="dash-metric-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+              <span class="dash-metric-copy">
+                <span class="dash-metric-label">Total Income</span>
+                <span class="dash-metric-value" id="stat-income">₱0.00</span>
+                <span class="dash-metric-trend" id="stat-income-trend">— 0% vs. last month</span>
+              </span>
+            </button>
+            <button type="button" class="ft-card dash-metric-card is-spending text-left w-full dash-nav-card" id="card-spending" onclick="navigateTo('spending')" title="Go to Spending">
+              <span class="dash-metric-icon" aria-hidden="true"><i data-lucide="credit-card"></i></span>
+              <span class="dash-metric-copy">
+                <span class="dash-metric-label">Spending</span>
+                <span class="dash-metric-value" id="stat-spending">₱0.00</span>
+                <span class="dash-metric-trend" id="stat-spending-trend">— 0% vs. last month</span>
+              </span>
+            </button>
+            <button type="button" class="ft-card dash-metric-card is-savings text-left w-full dash-nav-card" id="card-savings" onclick="navigateTo('savings')" title="Go to Savings">
+              <span class="dash-metric-icon" aria-hidden="true"><i data-lucide="piggy-bank"></i></span>
+              <span class="dash-metric-copy">
+                <span class="dash-metric-label">Savings</span>
+                <span class="dash-metric-value" id="stat-savings">₱0.00</span>
+                <span class="dash-metric-trend" id="stat-savings-trend">— 0% vs. last month</span>
+              </span>
+            </button>
+            <button type="button" class="ft-card dash-metric-card is-investments text-left w-full dash-nav-card" id="card-investments" onclick="navigateTo('investment')" title="Go to Investment">
+              <span class="dash-metric-icon" aria-hidden="true"><i data-lucide="trending-up"></i></span>
+              <span class="dash-metric-copy">
+                <span class="dash-metric-label">Investments</span>
+                <span class="dash-metric-value" id="stat-investments">₱0.00</span>
+                <span class="dash-metric-trend" id="stat-investments-trend">— 0% vs. last month</span>
+              </span>
+            </button>
+            <button type="button" class="ft-card dash-metric-card is-protection text-left w-full dash-nav-card col-span-2 lg:col-span-1" id="card-protection" onclick="navigateTo('protection')" title="Go to Protection">
+              <span class="dash-metric-icon" aria-hidden="true"><i data-lucide="shield"></i></span>
+              <span class="dash-metric-copy">
+                <span class="dash-metric-label">Protection Status</span>
+                <span class="dash-metric-value" id="stat-protection">None</span>
+                <span class="dash-metric-trend" id="stat-protection-trend">No active coverage</span>
+              </span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="ft-card p-4 lg:col-span-1 dash-alloc-card">
+              <h3 class="dash-section-title"><i data-lucide="pie-chart" class="w-4 h-4"></i> Financial Allocation</h3>
+              <p class="dash-alloc-hint">Ring size vs your largest money bucket (Protection = monthly cost)</p>
+              <div class="dash-alloc-layout">
+                <div class="dash-alloc-chart">
+                  <canvas id="allocationChart" width="280" height="280" aria-label="Financial allocation radial chart"></canvas>
+                  <img class="xmas-alloc-tree xmas-only" hidden src="assets/xmas/tree-mini.png?v=6" alt="" width="72" height="72" decoding="async" aria-hidden="true">
+                  <img class="easter-alloc-egg easter-only" hidden src="assets/easter/egg-mini.png?v=1" alt="" width="64" height="64" decoding="async" aria-hidden="true">
+                  <img class="halloween-alloc-pump halloween-only" hidden src="assets/halloween/pumpkin.png?v=1" alt="" width="64" height="64" decoding="async" aria-hidden="true">
+                </div>
+                <ul class="dash-alloc-legend" id="allocation-legend" aria-label="Allocation legend"></ul>
+              </div>
+            </div>
+            <div class="dash-goals-col lg:col-span-1 space-y-3">
+              <div class="ft-card p-4 dash-goals-card">
+                <div class="dash-goals-head">
+                  <h3 class="dash-section-title !mb-0"><i data-lucide="target" class="w-4 h-4"></i> Top Goals</h3>
+                  <button type="button" class="dash-goals-viewall" onclick="navigateTo('goals')">View All <i data-lucide="arrow-right"></i></button>
+                </div>
+                <div id="dash-goals-list" class="dash-goals-body"></div>
+              </div>
+              <div class="ft-card dash-quick-actions">
+                <button type="button" class="dash-qa-btn is-income" onclick="navigateTo('income')" title="Add Income">
+                  <span class="dash-qa-icon"><i data-lucide="plus"></i></span>
+                  <span class="dash-qa-label">Add Income</span>
+                </button>
+                <button type="button" class="dash-qa-btn is-expense" onclick="navigateTo('spending')" title="Add Expense">
+                  <span class="dash-qa-icon"><i data-lucide="minus"></i></span>
+                  <span class="dash-qa-label">Add Expense</span>
+                </button>
+                <button type="button" class="dash-qa-btn is-savings" onclick="navigateTo('savings')" title="Add Savings">
+                  <span class="dash-qa-icon"><i data-lucide="piggy-bank"></i></span>
+                  <span class="dash-qa-label">Add Savings</span>
+                </button>
+                <button type="button" class="dash-qa-btn is-invest" onclick="navigateTo('investment'); setTimeout(function(){ openInvestmentModal(); }, 80)" title="Add Investment">
+                  <span class="dash-qa-icon"><i data-lucide="trending-up"></i></span>
+                  <span class="dash-qa-label">Add Investment</span>
+                </button>
+              </div>
+            </div>
+            <div class="ft-card p-4 lg:col-span-1">
+              <h3 class="dash-section-title"><i data-lucide="trending-up" class="w-4 h-4"></i> 6-Month Trend</h3>
+              <div class="relative h-52"><canvas id="growthChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="ft-card p-4">
+              <h3 class="dash-section-title"><i data-lucide="bell" class="w-4 h-4"></i> Important Notifications</h3>
+              <ul id="dash-notifications" class="space-y-2 text-xs text-[var(--ft-muted)]"></ul>
+            </div>
+            <div class="ft-card p-4">
+              <h3 class="dash-section-title"><i data-lucide="sparkles" class="w-4 h-4"></i> Personalized Insights</h3>
+              <ul id="dash-insights" class="space-y-2 text-xs text-[var(--ft-muted)]"></ul>
+            </div>
+            <div class="ft-card p-4">
+              <h3 class="dash-section-title"><i data-lucide="compass" class="w-4 h-4"></i> Next Best Action</h3>
+              <p id="dash-next-action" class="text-sm text-[var(--ft-ink)] font-semibold leading-relaxed"></p>
+            </div>
+            <div class="ft-card p-4">
+              <h3 class="dash-section-title"><i data-lucide="smile" class="w-4 h-4"></i> Money Personality</h3>
+              <p id="dash-personality-title" class="text-base font-extrabold theme-text"></p>
+              <p id="dash-personality-desc" class="text-xs text-[var(--ft-muted)] mt-1"></p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="dash-side-col">
+          <div class="ft-card dash-cal-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="dash-section-title !mb-0" id="mini-cal-title"><i data-lucide="calendar" class="w-4 h-4"></i> Calendar</h3>
+              <div class="flex gap-1">
+                <button type="button" onclick="shiftMiniCalendar(-1)" class="ft-icon-btn !w-8 !h-8"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                <button type="button" onclick="shiftMiniCalendar(1)" class="ft-icon-btn !w-8 !h-8"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+            <div class="mini-cal-grid text-[10px] font-semibold text-[var(--ft-muted)] mb-1 mini-cal-weekdays">
+              <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div id="mini-calendar" class="mini-cal-grid"></div>
+            <p class="text-[10px] text-[var(--ft-muted)] mt-3 dash-cal-hint">Highlighted days have goals or dated bills.</p>
+            <div class="vday-cal-banner vday-only" hidden>
+              <span class="vday-cal-banner-ico" aria-hidden="true">♥</span>
+              <div>
+                <strong id="vday-cal-banner-title">Valentine's Season</strong>
+                <p id="vday-cal-banner-body">A great day to celebrate the love you have for your future self! ♥</p>
+              </div>
+            </div>
+            <div class="xmas-cal-banner xmas-only" hidden>
+              <img class="xmas-cal-banner-art" src="assets/xmas/holly-mini.png?v=6" alt="" width="40" height="40" decoding="async">
+              <div>
+                <strong id="xmas-cal-banner-title">Christmas Season</strong>
+                <p id="xmas-cal-banner-body">May your financial goals become your best gifts this Christmas!</p>
+              </div>
+            </div>
+            <div class="easter-cal-banner easter-only" hidden>
+              <img class="easter-cal-banner-art" src="assets/easter/egg-mini.png?v=1" alt="" width="40" height="40" decoding="async">
+              <div>
+                <strong id="easter-cal-banner-title">Easter Season</strong>
+                <p id="easter-cal-banner-body">Small steps today, bigger dreams tomorrow.</p>
+              </div>
+            </div>
+            <div class="halloween-cal-banner halloween-only" hidden>
+              <img class="halloween-cal-banner-art" src="assets/halloween/pumpkin.png?v=1" alt="" width="40" height="40" decoding="async">
+              <div>
+                <strong id="halloween-cal-banner-title">Halloween Season</strong>
+                <p id="halloween-cal-banner-body">Keep your financial goals as your superpower!</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="ft-card dash-health-panel">
+            <div class="dash-health-panel-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="heart-pulse" class="w-4 h-4"></i> Financial Health</h3>
+            </div>
+            <div class="dash-health-panel-score">
+              <div class="health-score-ring health-score-ring--welcome" id="health-score-ring">
+                <span id="health-score-value">0</span>
+                <small>/100</small>
+              </div>
+              <div>
+                <p class="dash-welcome-score-title" id="dash-health-band">No data yet</p>
+                <p class="dash-welcome-score-sub" id="health-score-label">Add data to unlock pillar scores</p>
+              </div>
+            </div>
+            <div class="dash-health-tips" id="dash-health-tips"></div>
+            <div class="dash-health-footer">
+              <i data-lucide="sprout" class="w-4 h-4"></i>
+              <span id="dash-hero-focus">You got this!</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="vday-footer-ribbon vday-only" hidden aria-hidden="true">
+        <span class="vday-ribbon-hearts">♥ ♥ ♥</span>
+        <span class="vday-ribbon-text">Love your finances, and your future. Plan. Save. Grow. Because you deserve it.</span>
+        <span class="vday-ribbon-mail">💌 🌹</span>
+      </div>
+    </section>
+
+    <!-- INCOME -->
+    <section id="view-income" class="hidden income-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Income</p>
+          <h2 class="income-hero-title">Track Your Earnings <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">See where your money comes from and how your income changes over time.</p>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Love your future ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="income-layout">
+        <div class="income-main">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="ft-card p-4 income-chart-card">
+              <div class="income-card-head">
+                <h3 class="dash-section-title !mb-0"><i data-lucide="pie-chart" class="w-4 h-4"></i> Income Chart</h3>
+                <select id="income-chart-range" class="income-mini-select" onchange="renderIncomePage()">
+                  <option value="month">This Month</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+              <div class="income-donut-wrap">
+                <div class="income-donut-chart relative">
+                  <canvas id="incomeChart"></canvas>
+                  <div class="income-donut-center" id="income-donut-center">
+                    <strong id="income-donut-total">₱0</strong>
+                    <span>Total Income</span>
+                  </div>
+                </div>
+                <ul class="income-donut-legend" id="income-type-legend"></ul>
+              </div>
+            </div>
+            <div class="ft-card p-4 income-chart-card">
+              <div class="income-card-head">
+                <h3 class="dash-section-title !mb-0"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> Income Trend</h3>
+                <select id="income-trend-range" class="income-mini-select" onchange="renderIncomePage()">
+                  <option value="month">This Month</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+              <div class="relative h-52"><canvas id="incomeTrendChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="ft-card income-toolbar">
+            <div class="income-search-wrap">
+              <i data-lucide="search" class="income-search-icon"></i>
+              <input type="search" id="income-search" class="income-search-input" placeholder="Search source, type, or description..." oninput="onIncomeFilterChange()">
+            </div>
+            <button type="button" class="income-add-btn" onclick="openIncomeModal()">
+              <i data-lucide="plus"></i> Add Income
+            </button>
+          </div>
+
+          <div class="ft-card income-records-card">
+            <div class="income-records-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="list" class="w-4 h-4"></i> Income Records</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="ft-table income-table w-full">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Remaining Balance</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="income-table-body"></tbody>
+              </table>
+            </div>
+            <div class="income-pagination">
+              <p id="income-page-info" class="income-page-info">Showing 0–0 of 0 records</p>
+              <div class="income-page-controls">
+                <button type="button" class="ft-icon-btn !w-8 !h-8" onclick="shiftIncomePage(-1)" aria-label="Previous page"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                <span id="income-page-num" class="income-page-num">1</span>
+                <button type="button" class="ft-icon-btn !w-8 !h-8" onclick="shiftIncomePage(1)" aria-label="Next page"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="income-side">
+          <div class="ft-card income-balance-card">
+            <div class="income-balance-icon"><i data-lucide="wallet"></i></div>
+            <p class="income-balance-label">Remaining Balance</p>
+            <p class="income-balance-value" id="income-remaining">₱0.00</p>
+          </div>
+
+          <div class="ft-card p-4">
+            <h3 class="dash-section-title"><i data-lucide="layers" class="w-4 h-4"></i> Income Breakdown</h3>
+            <ul class="income-breakdown-list" id="income-breakdown-list"></ul>
+          </div>
+
+          <div class="ft-card p-4">
+            <h3 class="dash-section-title"><i data-lucide="lightbulb" class="w-4 h-4"></i> Quick Insights</h3>
+            <div class="income-insights" id="income-insights"></div>
+          </div>
+
+          <div class="income-motivate">
+            <i data-lucide="sprout"></i>
+            <span>You're doing great! ♡</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- SPENDING -->
+    <section id="view-spending" class="hidden spending-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Spending</p>
+          <h2 class="income-hero-title">Track Your Spending <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Track where your money goes and understand your spending habits.</p>
+        </div>
+        <div class="module-hero-actions">
+          <button type="button" class="spending-add-btn" onclick="openExpenseModal()">
+            <i data-lucide="plus"></i> Add Expense
+          </button>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Spend with love ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="spending-metrics">
+        <div class="spend-metric spend-metric-total">
+          <div class="spend-metric-icon"><i data-lucide="wallet"></i></div>
+          <div class="spend-metric-body">
+            <p class="spend-metric-label">Total Spending</p>
+            <p class="spend-metric-value" id="spend-metric-total">₱0.00</p>
+            <p class="spend-metric-meta">This month</p>
+            <p class="spend-metric-trend" id="spend-metric-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <button type="button" class="spend-metric spend-metric-budget" onclick="openBudgetLimitModal()" title="Set spending limit">
+          <div class="spend-metric-icon"><i data-lucide="target"></i></div>
+          <div class="spend-metric-body">
+            <p class="spend-metric-label">Budget Limit <span class="spend-set-hint"><i data-lucide="pencil"></i> Set</span></p>
+            <p class="spend-metric-value" id="spend-metric-budget">₱0.00</p>
+            <div class="spend-budget-track"><div class="spend-budget-fill" id="spend-budget-fill"></div></div>
+            <p class="spend-metric-meta" id="spend-budget-meta">Spent ₱0.00 (0%)</p>
+          </div>
+        </button>
+        <div class="spend-metric spend-metric-remain">
+          <div class="spend-metric-icon"><i data-lucide="piggy-bank"></i></div>
+          <div class="spend-metric-body">
+            <p class="spend-metric-label">Remaining</p>
+            <p class="spend-metric-value" id="spend-metric-remain">₱0.00</p>
+            <p class="spend-metric-alert" id="spend-remain-alert">Set a budget to track remaining.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="spending-layout">
+        <div class="spending-main">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="ft-card p-4 spending-chart-card">
+              <h3 class="dash-section-title"><i data-lucide="pie-chart" class="w-4 h-4"></i> Needs vs. Wants</h3>
+              <div class="spend-donut-wrap">
+                <div class="spend-donut-chart relative">
+                  <canvas id="needsWantsChart"></canvas>
+                  <div class="spend-donut-center">
+                    <strong id="spend-donut-total">₱0</strong>
+                    <span>Total</span>
+                  </div>
+                </div>
+                <ul class="spend-donut-legend" id="spend-needs-legend"></ul>
+              </div>
+            </div>
+            <div class="ft-card p-4 spending-chart-card">
+              <h3 class="dash-section-title"><i data-lucide="activity" class="w-4 h-4"></i> Spending Trend</h3>
+              <div class="relative h-52"><canvas id="spendingTrendChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="ft-card spending-history-card">
+            <div class="spending-history-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="calendar-days" class="w-4 h-4"></i> Expense History</h3>
+              <select id="spend-range-filter" class="spend-range-select" onchange="onSpendFilterChange()"></select>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="ft-table spending-table w-full">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Mood</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="spending-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="spending-analytics">
+            <div class="ft-card p-4">
+              <h3 class="dash-section-title"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Spending by Category</h3>
+              <div class="spend-cat-bars" id="spend-category-bars"></div>
+            </div>
+            <div class="ft-card p-4">
+              <h3 class="dash-section-title"><i data-lucide="lightbulb" class="w-4 h-4"></i> Quick Insights</h3>
+              <ul class="spend-insights" id="spend-insights"></ul>
+            </div>
+          </div>
+        </div>
+
+        <aside class="spending-side">
+          <div class="ft-card p-4 spend-alerts-card">
+            <div class="spend-alerts-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="bell" class="w-4 h-4"></i> Spending Alerts</h3>
+              <span class="spend-alerts-badge" id="spend-alerts-badge" hidden>0</span>
+            </div>
+            <button type="button" class="spend-alert-rule" onclick="openExpenseAlertModal()" title="Change high-spend alert amount">
+              <span class="spend-alert-rule-text">
+                Alert me when a spending is ≥ <strong id="spend-alert-threshold-label">₱2,000.00</strong>
+              </span>
+              <span class="spend-alert-rule-edit"><i data-lucide="pencil"></i> Edit</span>
+            </button>
+            <ul class="spend-alerts-list" id="spend-alerts-list"></ul>
+          </div>
+
+          <div class="ft-card p-4">
+            <h3 class="dash-section-title"><i data-lucide="smile" class="w-4 h-4"></i> Mood + Spending</h3>
+            <div class="spend-mood-bars" id="spend-mood-bars"></div>
+          </div>
+
+          <div class="spend-quote">
+            <i data-lucide="leaf"></i>
+            <span>Discipline today builds freedom tomorrow. ♡</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- SAVINGS -->
+    <section id="view-savings" class="hidden savings-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Savings</p>
+          <h2 class="income-hero-title">Grow Your Savings <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Track your savings, grow your future, and reach your goals.</p>
+        </div>
+        <div class="module-hero-actions savings-header-actions">
+          <select id="savings-period" class="savings-period-select" onchange="renderSavingsPage()">
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+          <button type="button" class="savings-add-btn" onclick="openSavingsGoalModal()">
+            <i data-lucide="plus"></i> Add Goal
+          </button>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Save for forever ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="savings-metrics">
+        <div class="sav-metric sav-metric-total">
+          <div class="sav-metric-icon"><i data-lucide="piggy-bank"></i></div>
+          <div>
+            <p class="sav-metric-label">Total Savings</p>
+            <p class="sav-metric-value" id="sav-total">₱0.00</p>
+            <p class="sav-metric-badge" id="sav-total-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="sav-metric sav-metric-rate">
+          <div class="sav-metric-icon"><i data-lucide="percent"></i></div>
+          <div>
+            <p class="sav-metric-label">Savings Rate</p>
+            <p class="sav-metric-value" id="sav-rate">0%</p>
+            <p class="sav-metric-badge" id="sav-rate-trend">vs income</p>
+          </div>
+        </div>
+        <div class="sav-metric sav-metric-ef">
+          <div class="sav-metric-icon"><i data-lucide="shield"></i></div>
+          <div>
+            <p class="sav-metric-label">Emergency Fund</p>
+            <p class="sav-metric-value" id="sav-ef">₱0.00</p>
+            <p class="sav-metric-meta" id="sav-ef-months">— months of expenses</p>
+          </div>
+        </div>
+        <div class="sav-metric sav-metric-monthly">
+          <div class="sav-metric-icon"><i data-lucide="wallet"></i></div>
+          <div>
+            <p class="sav-metric-label">Monthly Contribution</p>
+            <p class="sav-metric-value" id="sav-monthly">₱0.00</p>
+            <p class="sav-metric-badge" id="sav-monthly-badge">planned deposits</p>
+          </div>
+        </div>
+        <div class="sav-metric sav-metric-eta">
+          <div class="sav-metric-icon"><i data-lucide="target"></i></div>
+          <div>
+            <p class="sav-metric-label">Estimated Completion</p>
+            <p class="sav-metric-value sav-metric-value-sm" id="sav-eta">—</p>
+            <p class="sav-metric-meta">For your financial goals</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="savings-layout">
+        <div class="savings-main">
+          <div class="savings-charts">
+            <div class="ft-card p-4 savings-growth-card">
+              <div class="savings-card-head">
+                <h3 class="dash-section-title !mb-0"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> Savings Growth</h3>
+                <div class="savings-range-pills" id="savings-growth-range">
+                  <button type="button" class="sav-range-btn" data-range="3" onclick="setSavingsGrowthRange(3)">3M</button>
+                  <button type="button" class="sav-range-btn" data-range="6" onclick="setSavingsGrowthRange(6)">6M</button>
+                  <button type="button" class="sav-range-btn active" data-range="12" onclick="setSavingsGrowthRange(12)">1Y</button>
+                  <button type="button" class="sav-range-btn" data-range="all" onclick="setSavingsGrowthRange('all')">All</button>
+                </div>
+              </div>
+              <div class="relative h-56"><canvas id="savingsChart"></canvas></div>
+            </div>
+            <div class="ft-card p-4 savings-donut-card">
+              <h3 class="dash-section-title"><i data-lucide="pie-chart" class="w-4 h-4"></i> Savings Category Breakdown</h3>
+              <div class="sav-donut-wrap">
+                <div class="sav-donut-chart relative">
+                  <canvas id="savingsCategoryChart"></canvas>
+                  <div class="sav-donut-center">
+                    <strong id="sav-donut-total">₱0</strong>
+                    <span>Total Savings</span>
+                  </div>
+                </div>
+                <ul class="sav-donut-legend" id="sav-category-legend"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="savings-goals-section">
+            <div class="savings-goals-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="target" class="w-4 h-4"></i> Savings Goals</h3>
+              <div class="savings-goals-actions">
+                <button type="button" class="savings-add-btn" onclick="openSavingsGoalModal()"><i data-lucide="plus"></i> Add Goal</button>
+              </div>
+            </div>
+            <div class="savings-goals-row" id="savings-goals-row"></div>
+          </div>
+
+          <div class="ft-card savings-history-card">
+            <div class="savings-history-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Savings History</h3>
+              <select id="savings-history-month" class="savings-period-select" onchange="renderSavingsPage()" aria-label="History month"></select>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="ft-table savings-table w-full">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description / Goal</th>
+                    <th>Account</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Monthly</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="savings-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <aside class="savings-side">
+          <div class="ft-card p-4 sav-target-card">
+            <div class="sav-target-head">
+              <h3 class="dash-section-title !mb-0">Financial Goal Target</h3>
+              <button type="button" class="sav-edit-btn" onclick="openSavingsTargetModal()"><i data-lucide="pencil"></i> Edit</button>
+            </div>
+            <p class="sav-target-label">Overall Savings Goal</p>
+            <p class="sav-target-value" id="sav-overall-target">₱150,000.00</p>
+            <div class="sav-target-track"><div class="sav-target-fill" id="sav-overall-fill"></div></div>
+            <div class="sav-target-meta">
+              <span id="sav-overall-pct">0%</span>
+              <span>Completed <strong id="sav-overall-saved">₱0.00</strong></span>
+              <span>In active goals <strong id="sav-overall-active">₱0.00</strong></span>
+              <span>Remaining <strong id="sav-overall-remain">₱0.00</strong></span>
+            </div>
+          </div>
+
+          <div class="ft-card p-4">
+            <div class="sav-target-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="sparkles" class="w-4 h-4"></i> Insights & Alerts</h3>
+            </div>
+            <ul class="sav-insights" id="sav-insights"></ul>
+          </div>
+
+          <div class="sav-quote">
+            <i data-lucide="leaf"></i>
+            <span>Small savings today build big dreams tomorrow. ♡</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- INVESTMENT -->
+    <section id="view-investment" class="hidden investment-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Investment</p>
+          <h2 class="income-hero-title">Grow Your Investments <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Track your investments and see how your money grows.</p>
+        </div>
+        <div class="module-hero-actions investment-header-actions">
+          <select id="invest-period" class="investment-period-select" onchange="renderInvestmentPage()" aria-label="Time filter">
+            <option value="year">This Year</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+          <button type="button" class="investment-add-btn" onclick="openInvestmentModal()">
+            <i data-lucide="plus"></i> Add Investment
+          </button>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Invest in love ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="investment-metrics">
+        <div class="inv-metric inv-metric-total">
+          <div class="inv-metric-icon"><i data-lucide="line-chart"></i></div>
+          <div>
+            <p class="inv-metric-label">Total Investments</p>
+            <p class="inv-metric-value" id="inv-total">₱0.00</p>
+            <p class="inv-metric-badge" id="inv-total-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="inv-metric inv-metric-gain">
+          <div class="inv-metric-icon"><i data-lucide="trending-up"></i></div>
+          <div>
+            <p class="inv-metric-label">Total Gain / Loss</p>
+            <p class="inv-metric-value" id="inv-gain">₱0.00</p>
+            <p class="inv-metric-badge" id="inv-gain-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="inv-metric inv-metric-value-card">
+          <div class="inv-metric-icon"><i data-lucide="wallet"></i></div>
+          <div>
+            <p class="inv-metric-label">Investment Portfolio Value</p>
+            <p class="inv-metric-value" id="inv-portfolio">₱0.00</p>
+            <p class="inv-metric-badge" id="inv-portfolio-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="inv-metric inv-metric-monthly">
+          <div class="inv-metric-icon"><i data-lucide="repeat"></i></div>
+          <div>
+            <p class="inv-metric-label">Monthly Contribution</p>
+            <p class="inv-metric-value" id="inv-monthly">₱0.00</p>
+            <p class="inv-metric-badge" id="inv-monthly-trend">planned deposits</p>
+          </div>
+        </div>
+        <div class="inv-metric inv-metric-return">
+          <div class="inv-metric-icon"><i data-lucide="percent"></i></div>
+          <div>
+            <p class="inv-metric-label">Estimated Annual Return</p>
+            <p class="inv-metric-value" id="inv-return">0%</p>
+            <p class="inv-metric-meta">Based on current portfolio</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="investment-layout">
+        <div class="investment-main">
+          <div class="investment-charts">
+            <div class="ft-card p-4 inv-donut-card">
+              <h3 class="dash-section-title"><i data-lucide="pie-chart" class="w-4 h-4"></i> Portfolio Breakdown</h3>
+              <div class="inv-donut-wrap">
+                <div class="inv-donut-chart relative">
+                  <canvas id="investChart"></canvas>
+                  <div class="inv-donut-center">
+                    <strong id="inv-donut-total">₱0</strong>
+                    <span>Total Portfolio</span>
+                  </div>
+                </div>
+                <ul class="inv-donut-legend" id="inv-category-legend"></ul>
+              </div>
+              <div class="inv-diversify-banner" id="inv-diversify-banner">
+                <span id="inv-diversify-text">Add investments to build your portfolio.</span>
+                <button type="button" class="inv-view-details" onclick="document.getElementById('investment-table-body')?.scrollIntoView({behavior:'smooth'})">View details →</button>
+              </div>
+            </div>
+
+            <div class="inv-mid-col">
+              <div class="ft-card p-4 inv-growth-card">
+                <div class="investment-card-head">
+                  <h3 class="dash-section-title !mb-0"><i data-lucide="activity" class="w-4 h-4"></i> Investment Growth</h3>
+                  <div class="investment-range-pills" id="invest-growth-range">
+                    <button type="button" class="inv-range-btn" data-range="3" onclick="setInvestGrowthRange(3)">3M</button>
+                    <button type="button" class="inv-range-btn" data-range="6" onclick="setInvestGrowthRange(6)">6M</button>
+                    <button type="button" class="inv-range-btn active" data-range="12" onclick="setInvestGrowthRange(12)">1Y</button>
+                    <button type="button" class="inv-range-btn" data-range="all" onclick="setInvestGrowthRange('all')">ALL</button>
+                  </div>
+                </div>
+                <div class="inv-growth-chart-wrap"><canvas id="investGrowthChart"></canvas></div>
+                <div class="inv-asset-minis" id="inv-asset-minis"></div>
+              </div>
+            </div>
+
+            <div class="ft-card p-4 inv-alloc-card">
+              <h3 class="dash-section-title"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> Investment Allocation</h3>
+              <div class="inv-alloc-bars" id="inv-alloc-bars"></div>
+            </div>
+          </div>
+
+          <div class="ft-card inv-table-card">
+            <div class="inv-table-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="briefcase" class="w-4 h-4"></i> Your Investments</h3>
+              <button type="button" class="investment-add-btn" onclick="openInvestmentModal()"><i data-lucide="plus"></i> Add Investment</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="ft-table investment-table w-full">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Current Value</th>
+                    <th>Gain / Loss</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="investment-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="inv-footer-row">
+            <div class="inv-quote">
+              <i data-lucide="leaf"></i>
+              <span>Small steps in investing today can lead to big results tomorrow.</span>
+            </div>
+            <div class="ft-card p-3 inv-foot-card">
+              <p class="inv-foot-label">Highest Performing</p>
+              <p class="inv-foot-value" id="inv-top-asset">—</p>
+              <p class="inv-foot-meta" id="inv-top-asset-pct">—</p>
+            </div>
+            <div class="ft-card p-3 inv-foot-card">
+              <p class="inv-foot-label">Largest Allocation</p>
+              <p class="inv-foot-value" id="inv-top-alloc">—</p>
+              <p class="inv-foot-meta" id="inv-top-alloc-pct">—</p>
+            </div>
+            <div class="ft-card p-3 inv-foot-card">
+              <p class="inv-foot-label">Next Milestone</p>
+              <p class="inv-foot-value" id="inv-milestone">—</p>
+              <div class="inv-milestone-track"><div class="inv-milestone-fill" id="inv-milestone-fill"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="investment-side">
+          <div class="ft-card p-4">
+            <div class="inv-side-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="target" class="w-4 h-4"></i> Investment Goals</h3>
+            </div>
+            <div class="inv-goals-list" id="inv-goals-list"></div>
+          </div>
+
+          <div class="ft-card p-4">
+            <div class="inv-side-head">
+              <h3 class="dash-section-title !mb-0"><i data-lucide="sparkles" class="w-4 h-4"></i> Quick Insights</h3>
+            </div>
+            <ul class="inv-insights" id="inv-insights"></ul>
+          </div>
+
+          <div class="inv-side-quote">
+            <i data-lucide="leaf"></i>
+            <span>Invest today for a brighter tomorrow. ♡</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- PROTECTION -->
+    <section id="view-protection" class="hidden protection-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Protection</p>
+          <h2 class="income-hero-title">Stay Protected <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Track how financially protected you are and what you can improve.</p>
+        </div>
+        <div class="module-hero-actions protection-header-actions">
+          <select id="prot-period" class="protection-period-select" onchange="renderProtectionPage()" aria-label="Time filter">
+            <option value="year">This Year</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+          <button type="button" class="protection-add-btn" onclick="openProtectionModal()">
+            <i data-lucide="plus"></i> Add Protection
+          </button>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Protect what matters ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="protection-metrics">
+        <div class="prot-metric prot-metric-score">
+          <div class="prot-metric-icon"><i data-lucide="shield"></i></div>
+          <div class="prot-metric-body">
+            <p class="prot-metric-label">Protection Score</p>
+            <div class="prot-metric-row">
+              <p class="prot-metric-value" id="prot-score">0/100</p>
+              <span class="prot-badge" id="prot-score-badge">—</span>
+            </div>
+            <p class="prot-metric-trend" id="prot-score-trend">— vs. last month</p>
+          </div>
+        </div>
+        <div class="prot-metric prot-metric-coverage">
+          <div class="prot-metric-icon"><i data-lucide="umbrella"></i></div>
+          <div class="prot-metric-body">
+            <p class="prot-metric-label">Coverage Status</p>
+            <div class="prot-metric-row">
+              <p class="prot-metric-value" id="prot-coverage">0/5 covered</p>
+              <span class="prot-badge is-warn" id="prot-missing-badge">0 missing</span>
+            </div>
+            <div class="prot-mini-track"><div class="prot-mini-fill" id="prot-coverage-fill"></div></div>
+            <p class="prot-metric-meta" id="prot-coverage-list">No coverage yet</p>
+          </div>
+        </div>
+        <div class="prot-metric prot-metric-ef">
+          <div class="prot-metric-icon"><i data-lucide="wallet"></i></div>
+          <div class="prot-metric-body">
+            <p class="prot-metric-label">Emergency Fund Status</p>
+            <div class="prot-metric-row">
+              <p class="prot-metric-value" id="prot-ef-status">Missing</p>
+              <span class="prot-badge" id="prot-ef-badge">—</span>
+            </div>
+            <div class="prot-mini-track"><div class="prot-mini-fill is-sage" id="prot-ef-fill"></div></div>
+            <p class="prot-metric-meta">Target: 3–6 months</p>
+          </div>
+        </div>
+        <div class="prot-metric prot-metric-cost">
+          <div class="prot-metric-icon"><i data-lucide="shield-plus"></i></div>
+          <div class="prot-metric-body">
+            <p class="prot-metric-label">Monthly Protection Cost</p>
+            <p class="prot-metric-value" id="prot-monthly-cost">₱0.00</p>
+            <p class="prot-metric-meta" id="prot-cost-pct">0% of monthly income</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="protection-charts">
+        <div class="ft-card p-4 prot-trend-card">
+          <div class="protection-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="activity" class="w-4 h-4"></i> Protection Score Trend</h3>
+            <div class="protection-range-pills" id="prot-trend-range">
+              <button type="button" class="prot-range-btn" data-range="3" onclick="setProtTrendRange(3)">3M</button>
+              <button type="button" class="prot-range-btn" data-range="6" onclick="setProtTrendRange(6)">6M</button>
+              <button type="button" class="prot-range-btn active" data-range="12" onclick="setProtTrendRange(12)">1Y</button>
+              <button type="button" class="prot-range-btn" data-range="all" onclick="setProtTrendRange('all')">ALL</button>
+            </div>
+          </div>
+          <div class="prot-trend-chart-wrap"><canvas id="protTrendChart"></canvas></div>
+        </div>
+
+        <div class="ft-card p-4 prot-ef-detail">
+          <h3 class="dash-section-title"><i data-lucide="piggy-bank" class="w-4 h-4"></i> Emergency Fund Status</h3>
+          <div class="prot-ef-hero">
+            <div class="prot-ef-illus" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+            <div>
+              <p class="prot-ef-strong" id="prot-ef-detail-status">Missing</p>
+              <p class="prot-ef-copy" id="prot-ef-detail-copy">Start an emergency fund to cover unexpected expenses.</p>
+            </div>
+          </div>
+          <div class="prot-ef-track"><div class="prot-ef-fill" id="prot-ef-detail-fill"></div></div>
+          <div class="prot-ef-meta-row">
+            <span id="prot-ef-detail-months">0 mo</span>
+            <span>Target: 3–6 months</span>
+          </div>
+          <div class="prot-ef-insight" id="prot-ef-insight">
+            <i data-lucide="check-circle-2"></i>
+            <span id="prot-ef-insight-text">Build toward at least 1 month of expenses.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="protection-mid">
+        <div class="ft-card p-4 prot-check-card">
+          <div class="protection-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="clipboard-check" class="w-4 h-4"></i> Protection Checklist</h3>
+            <span class="prot-chip" id="prot-check-progress">0/5 completed</span>
+          </div>
+          <ul class="prot-check-list" id="prot-checklist"></ul>
+        </div>
+
+        <div class="ft-card p-4 prot-recs-card">
+          <div class="protection-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="lightbulb" class="w-4 h-4"></i> Recommendations</h3>
+            <button type="button" class="prot-view-all" onclick="document.getElementById('protection-table-body')?.scrollIntoView({behavior:'smooth'})">View All →</button>
+          </div>
+          <ul class="prot-recs-list" id="prot-recs"></ul>
+        </div>
+
+        <div class="prot-overall-card">
+          <div class="prot-overall-top">
+            <span class="prot-overall-ico"><i data-lucide="shield"></i></span>
+            <div>
+              <span class="prot-badge" id="prot-overall-badge">—</span>
+              <p class="prot-overall-sub" id="prot-overall-sub">Add protection policies to build your safety net.</p>
+            </div>
+          </div>
+          <div class="prot-gauge-wrap">
+            <canvas id="protGaugeChart"></canvas>
+            <div class="prot-gauge-center">
+              <strong id="prot-gauge-score">0</strong>
+              <span>/100</span>
+            </div>
+          </div>
+          <ul class="prot-overall-stats" id="prot-overall-stats"></ul>
+          <p class="prot-overall-tag">More protection. More peace of mind. ♡</p>
+        </div>
+      </div>
+
+      <div class="ft-card prot-table-card">
+        <div class="prot-table-head">
+          <h3 class="dash-section-title !mb-0"><i data-lucide="file-text" class="w-4 h-4"></i> Your Policies</h3>
+          <button type="button" class="protection-add-btn" onclick="openProtectionModal()"><i data-lucide="plus"></i> Add Protection</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="ft-table protection-table w-full">
+            <thead>
+              <tr>
+                <th>Policy</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Coverage</th>
+                <th>Monthly</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="protection-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="prot-page-quote">
+        <i data-lucide="leaf"></i>
+        <span>Protection today, peace of mind tomorrow. ♡</span>
+      </div>
+    </section>
+
+    <!-- GOALS -->
+    <section id="view-goals" class="hidden space-y-5">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Goals</p>
+          <h2 class="income-hero-title">Reach Your Goals <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Progress, contributions &amp; target dates.</p>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Dreams come true ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+      <div class="ft-card p-4">
+        <form id="goals-form" onsubmit="handleModuleSubmit(event,'goals')" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <input type="text" id="goal-desc" placeholder="Goal name" required class="ft-input">
+          <input type="number" id="goal-current" placeholder="Current (₱)" step="0.01" required class="ft-input">
+          <input type="number" id="goal-target" placeholder="Target (₱)" step="0.01" required class="ft-input">
+          <input type="number" id="goal-monthly" placeholder="Monthly ₱" step="0.01" class="ft-input">
+          <input type="date" id="goal-due" class="ft-input" title="Target date">
+          <button type="submit" class="theme-btn-primary h-10 rounded-xl text-white font-bold text-xs sm:col-span-2 lg:col-span-5 flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Add Goal</button>
+        </form>
+      </div>
+      <div id="goals-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="view-analytics" class="hidden analytics-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Analytics</p>
+          <h2 class="income-hero-title">Smarter Insights <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Turn your data into smarter decisions. Track, analyze, and grow your financial journey.</p>
+        </div>
+        <div class="module-hero-actions analytics-header-actions">
+          <select id="analytics-period" class="analytics-period-select" onchange="renderAnalyticsPage()" aria-label="Time filter">
+            <option value="year">This Year</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Know your money ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="analytics-metrics">
+        <div class="an-metric an-metric-spend">
+          <div class="an-metric-icon"><i data-lucide="wallet"></i></div>
+          <div>
+            <p class="an-metric-label">Total Spending</p>
+            <p class="an-metric-value" id="an-spend">₱0.00</p>
+            <p class="an-metric-trend" id="an-spend-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="an-metric an-metric-save">
+          <div class="an-metric-icon"><i data-lucide="piggy-bank"></i></div>
+          <div>
+            <p class="an-metric-label">Total Savings</p>
+            <p class="an-metric-value" id="an-save">₱0.00</p>
+            <p class="an-metric-trend" id="an-save-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="an-metric an-metric-income">
+          <div class="an-metric-icon"><i data-lucide="trending-up"></i></div>
+          <div>
+            <p class="an-metric-label">Total Income</p>
+            <p class="an-metric-value" id="an-income">₱0.00</p>
+            <p class="an-metric-trend" id="an-income-trend">— 0% vs. last month</p>
+          </div>
+        </div>
+        <div class="an-metric an-metric-nw">
+          <div class="an-metric-icon"><i data-lucide="target"></i></div>
+          <div>
+            <p class="an-metric-label">Net Worth</p>
+            <p class="an-metric-value" id="an-networth">₱0.00</p>
+            <p class="an-metric-trend" id="an-networth-trend">assets snapshot</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-top-grid">
+        <div class="ft-card p-4 an-donut-card">
+          <div class="analytics-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="pie-chart" class="w-4 h-4"></i> Spending Breakdown</h3>
+            <select id="an-spend-range" class="analytics-mini-select" onchange="renderAnalyticsPage()" aria-label="Spending range">
+              <option value="month">This Month</option>
+              <option value="prev">Last Month</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+          <div class="an-donut-wrap">
+            <div class="an-donut-chart">
+              <canvas id="anSpendDonutChart"></canvas>
+              <div class="an-donut-center">
+                <strong id="an-donut-total">₱0</strong>
+                <span>Total Spending</span>
+              </div>
+            </div>
+            <ul class="an-donut-legend" id="an-spend-legend"></ul>
+          </div>
+        </div>
+
+        <div class="ft-card p-4 an-trend-card">
+          <div class="analytics-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="activity" class="w-4 h-4"></i> Income vs. Expenses</h3>
+          </div>
+          <div class="an-trend-chart-wrap"><canvas id="anIncomeExpenseChart"></canvas></div>
+        </div>
+
+        <div class="ft-card p-4 an-insights-card">
+          <div class="analytics-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="sparkles" class="w-4 h-4"></i> Spending Insights</h3>
+          </div>
+          <ul class="an-insights" id="an-insights"></ul>
+        </div>
+      </div>
+
+      <div class="analytics-mid-grid">
+        <div class="ft-card p-4">
+          <div class="analytics-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> Spending by Category</h3>
+          </div>
+          <div class="an-mid-chart-wrap"><canvas id="anCatCompareChart"></canvas></div>
+        </div>
+
+        <div class="ft-card p-4 an-summary-card">
+          <div class="analytics-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Financial Summary</h3>
+          </div>
+          <ul class="an-summary-list" id="an-summary-list"></ul>
+        </div>
+
+        <div class="ft-card p-4">
+          <div class="analytics-card-head">
+            <h3 class="dash-section-title !mb-0"><i data-lucide="calendar" class="w-4 h-4"></i> Monthly Comparison</h3>
+            <select id="an-month-metric" class="analytics-mini-select" onchange="renderAnalyticsPage()" aria-label="Metric">
+              <option value="expenses">Expenses</option>
+              <option value="income">Income</option>
+              <option value="savings">Savings</option>
+            </select>
+          </div>
+          <div class="an-mid-chart-wrap"><canvas id="anMonthlyCompareChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="analytics-bottom-grid">
+        <div class="an-nav-section">
+          <div class="an-nav-head">
+            <h3 class="dash-section-title !mb-0">Detailed Analytics</h3>
+            <p class="an-nav-sub">Explore deeper insights about your finances.</p>
+          </div>
+          <div class="an-nav-grid" id="an-nav-grid">
+            <button type="button" class="an-nav-card" onclick="navigateTo('spending')">
+              <span class="an-nav-ico is-spend"><i data-lucide="credit-card"></i></span>
+              <strong>Spending</strong>
+              <span>Needs, wants & budget</span>
+              <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
+            </button>
+            <button type="button" class="an-nav-card" onclick="navigateTo('income')">
+              <span class="an-nav-ico is-income"><i data-lucide="trending-up"></i></span>
+              <strong>Income</strong>
+              <span>Salary & side hustles</span>
+              <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
+            </button>
+            <button type="button" class="an-nav-card" onclick="navigateTo('savings')">
+              <span class="an-nav-ico is-save"><i data-lucide="piggy-bank"></i></span>
+              <strong>Savings</strong>
+              <span>Goals & emergency fund</span>
+              <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
+            </button>
+            <button type="button" class="an-nav-card" onclick="navigateTo('investment')">
+              <span class="an-nav-ico is-invest"><i data-lucide="line-chart"></i></span>
+              <strong>Investment</strong>
+              <span>Portfolio growth</span>
+              <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
+            </button>
+            <button type="button" class="an-nav-card" onclick="navigateTo('protection')">
+              <span class="an-nav-ico is-prot"><i data-lucide="shield-check"></i></span>
+              <strong>Protection</strong>
+              <span>Coverage & safety net</span>
+              <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
+            </button>
+            <button type="button" class="an-nav-card" onclick="navigateTo('goals')">
+              <span class="an-nav-ico is-goals"><i data-lucide="target"></i></span>
+              <strong>Goals</strong>
+              <span>Targets & progress</span>
+              <i data-lucide="arrow-up-right" class="an-nav-arrow"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="an-health-card">
+          <h3 class="dash-section-title"><i data-lucide="heart-pulse" class="w-4 h-4"></i> Financial Health Score</h3>
+          <div class="an-health-body">
+            <div class="an-health-gauge">
+              <canvas id="anHealthGaugeChart"></canvas>
+              <div class="an-health-center">
+                <strong id="an-health-score">0</strong>
+                <span id="an-health-label">/100</span>
+              </div>
+            </div>
+            <ul class="an-health-pillars" id="an-health-pillars"></ul>
+          </div>
+          <div class="an-health-tip" id="an-health-tip">
+            <i data-lucide="star"></i>
+            <span>Add financial data to unlock your health score.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="an-page-quote">
+        <i data-lucide="leaf"></i>
+        <span>Small insights today, big financial wins tomorrow. ♡</span>
+      </div>
+    </section>
+
+    <!-- CALCULATOR -->
+    <section id="view-calculator" class="hidden calculator-page">
+      <div class="calculator-header">
+        <div>
+          <h2 class="calculator-title"><i data-lucide="calculator" class="calculator-title-ico"></i> Calculator</h2>
+          <p class="calculator-sub">Use these financial calculators to make smarter decisions and plan for your future.</p>
+        </div>
+        <div class="calculator-header-actions">
+          <select id="calc-period" class="calculator-period-select" onchange="renderCalculator()" aria-label="Time filter">
+            <option value="year">This Year</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="calc-hero-banner">
+        <div class="calc-hero-copy">
+          <span class="calc-hero-illus" aria-hidden="true"><i data-lucide="calculator"></i></span>
+          <div>
+            <p class="calc-hero-tag">Small calculations lead to big financial goals. ♡</p>
+            <p class="calc-hero-sub">Live formulas based on your current FinTrack data (PHP ₱).</p>
+          </div>
+        </div>
+        <div class="calc-hero-deco" aria-hidden="true">
+          <i data-lucide="coins"></i>
+          <i data-lucide="sprout"></i>
+        </div>
+      </div>
+
+      <div class="calculator-grid" id="calculator-cards"></div>
+
+      <div class="calc-bottom-banner">
+        <div class="calc-bottom-left">
+          <span class="calc-bottom-ico"><i data-lucide="target"></i></span>
+          <div>
+            <h3>Calculate Today, Build Tomorrow</h3>
+            <p>Use these tools to understand your numbers, make better decisions, and achieve your financial goals.</p>
+          </div>
+        </div>
+        <div class="calc-bottom-art" aria-hidden="true">
+          <i data-lucide="trending-up"></i>
+          <i data-lucide="leaf"></i>
+          <i data-lucide="heart"></i>
+        </div>
+      </div>
+
+      <div class="calc-page-quote">
+        <i data-lucide="leaf"></i>
+        <span>Better decisions today, stronger tomorrow. ♡</span>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="hidden settings-page">
+      <div class="income-hero">
+        <div class="income-hero-copy">
+          <p class="income-hero-kicker">Settings</p>
+          <h2 class="income-hero-title">Manage Your Settings <span class="vday-only" hidden>❤️</span><span class="vday-hide-on-vday">♡</span></h2>
+          <p class="income-hero-sub">Manage your account, preferences, and security settings.</p>
+        </div>
+        <div class="income-hero-deco" aria-hidden="true"></div>
+        <div class="vday-hero-art vday-module-art vday-only" aria-hidden="true" hidden>
+          <div class="vday-gift-box">
+            <div class="vday-gift-lid"></div>
+            <div class="vday-gift-body"></div>
+            <div class="vday-gift-bow"></div>
+            <div class="vday-gift-tag">Make it yours ❤️</div>
+          </div>
+          <div class="vday-hero-roses">🌹🌹</div>
+          <span class="vday-spark s1">♥</span>
+          <span class="vday-spark s2">♥</span>
+          <span class="vday-spark s3">♥</span>
+        </div>
+        <div class="xmas-hero-art xmas-module-art xmas-only" aria-hidden="true" hidden>
+          <img class="xmas-hero-img xmas-hero-img-sm" src="assets/xmas/hero-scene.png?v=11" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="easter-hero-art easter-module-art easter-only" aria-hidden="true" hidden>
+          <img class="easter-hero-img easter-hero-img-sm" src="assets/easter/hero-scene.png?v=2" alt="" width="320" height="180" decoding="async">
+        </div>
+        <div class="halloween-hero-art halloween-module-art halloween-only" aria-hidden="true" hidden>
+          <img class="halloween-hero-img halloween-hero-img-sm" src="assets/halloween/hero-scene.png?v=4" alt="" width="320" height="180" decoding="async">
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Profile -->
+        <article class="settings-card settings-profile-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-profile"><i data-lucide="user"></i></span>
+              <div>
+                <h3>Profile</h3>
+                <p>Your account details</p>
+              </div>
+            </div>
+            <button type="button" class="settings-edit-btn" onclick="openProfileEditModal()">
+              <i data-lucide="pencil"></i> Edit
+            </button>
+          </div>
+          <div class="settings-profile-body">
+            <div class="settings-avatar-wrap">
+              <div id="settings-avatar" class="settings-avatar" aria-hidden="true">U</div>
+              <button type="button" class="settings-avatar-cam" onclick="document.getElementById('settings-avatar-file').click()" title="Change photo" aria-label="Change profile photo">
+                <i data-lucide="camera"></i>
+              </button>
+              <input type="file" id="settings-avatar-file" accept="image/*" class="hidden" onchange="handleSettingsAvatarChange(event)">
+            </div>
+            <div class="settings-profile-meta">
+              <strong id="settings-name">—</strong>
+              <p><i data-lucide="mail"></i> <span id="settings-email">—</span></p>
+              <p><i data-lucide="phone"></i> <span id="settings-phone">—</span></p>
+            </div>
+          </div>
+        </article>
+
+        <!-- Themes -->
+        <article class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-theme"><i data-lucide="palette"></i></span>
+              <div>
+                <h3>Themes</h3>
+                <p>Choose a theme that fits your style.</p>
+              </div>
+            </div>
+          </div>
+          <div class="settings-theme-gallery" id="theme-presets"></div>
+          <div class="settings-seasonal-block">
+            <label class="settings-seasonal-label" for="seasonal-accent-select">
+              <i data-lucide="sparkles"></i>
+              <span>Seasonal accents</span>
+            </label>
+            <p class="settings-seasonal-hint">Light holiday colors + decor on top of your theme (auto by date).</p>
+            <select id="seasonal-accent-select" class="settings-field-control" onchange="setSeasonalMode(this.value)">
+              <option value="auto">Auto (by date)</option>
+              <option value="off">Off</option>
+              <option value="christmas">Preview: Christmas</option>
+              <option value="valentines">Preview: Valentine’s</option>
+              <option value="easter">Preview: Easter</option>
+              <option value="halloween">Preview: Halloween</option>
+            </select>
+          </div>
+        </article>
+
+        <!-- Notifications -->
+        <article class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-notif"><i data-lucide="bell"></i></span>
+              <div>
+                <h3>Notifications</h3>
+                <p>Manage what you want to be notified about.</p>
+              </div>
+            </div>
+          </div>
+          <ul class="settings-notif-list">
+            <li>
+              <span class="settings-notif-ico is-budget"><i data-lucide="wallet"></i></span>
+              <div>
+                <strong>Budget Alerts</strong>
+                <span>Get notified when you're close to your budget limit.</span>
+              </div>
+              <label class="settings-switch">
+                <input type="checkbox" id="set-notif-budget" onchange="saveSettingsFromUI()">
+                <span class="settings-switch-track" aria-hidden="true"></span>
+              </label>
+            </li>
+            <li>
+              <span class="settings-notif-ico is-goals"><i data-lucide="target"></i></span>
+              <div>
+                <strong>Goal Reminders</strong>
+                <span>Receive reminders for your financial goals.</span>
+              </div>
+              <label class="settings-switch">
+                <input type="checkbox" id="set-notif-goals" onchange="saveSettingsFromUI()">
+                <span class="settings-switch-track" aria-hidden="true"></span>
+              </label>
+            </li>
+            <li>
+              <span class="settings-notif-ico is-achievements"><i data-lucide="trophy"></i></span>
+              <div>
+                <strong>Achievement Popups</strong>
+                <span>Celebrate your milestones with popup notifications.</span>
+              </div>
+              <label class="settings-switch">
+                <input type="checkbox" id="set-notif-achievements" onchange="saveSettingsFromUI()">
+                <span class="settings-switch-track" aria-hidden="true"></span>
+              </label>
+            </li>
+          </ul>
+        </article>
+
+        <!-- General -->
+        <article class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-general"><i data-lucide="sliders-horizontal"></i></span>
+              <div>
+                <h3>General</h3>
+                <p>Set your default preferences and currency.</p>
+              </div>
+            </div>
+          </div>
+          <div class="settings-form">
+            <label class="settings-field">
+              <span class="settings-field-label">Currency</span>
+              <div class="settings-field-control">
+                <i data-lucide="banknote"></i>
+                <select id="set-currency" onchange="saveSettingsFromUI()">
+                  <option value="PHP">PHP (₱)</option>
+                </select>
+              </div>
+            </label>
+            <label class="settings-field">
+              <span class="settings-field-label">Monthly Spending Budget</span>
+              <div class="settings-field-control">
+                <i data-lucide="wallet"></i>
+                <input type="number" id="set-budget" step="0.01" min="0" placeholder="15000" onchange="saveSettingsFromUI()">
+              </div>
+            </label>
+            <label class="settings-field">
+              <span class="settings-field-label">Alert Me When a Single Spending Reaches</span>
+              <div class="settings-field-control">
+                <i data-lucide="bell-ring"></i>
+                <input type="number" id="set-expense-alert" step="0.01" min="0" placeholder="2000" onchange="saveSettingsFromUI()">
+              </div>
+            </label>
+          </div>
+        </article>
+
+        <!-- Privacy & Security -->
+        <article class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-security"><i data-lucide="shield"></i></span>
+              <div>
+                <h3>Privacy &amp; Security</h3>
+                <p>Keep your account safe and secure.</p>
+              </div>
+            </div>
+          </div>
+          <div class="settings-form">
+            <label class="settings-field">
+              <span class="settings-field-label">Current Password</span>
+              <div class="settings-field-control has-toggle">
+                <i data-lucide="lock"></i>
+                <input type="password" id="set-current-pass" placeholder="Current password" autocomplete="current-password">
+                <button type="button" class="password-toggle settings-eye" onclick="togglePasswordVisibility('set-current-pass')" aria-label="Show password">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </label>
+            <label class="settings-field">
+              <span class="settings-field-label">New Password</span>
+              <div class="settings-field-control has-toggle">
+                <i data-lucide="key-round"></i>
+                <input type="password" id="set-new-pass" placeholder="New password" autocomplete="new-password">
+                <button type="button" class="password-toggle settings-eye" onclick="togglePasswordVisibility('set-new-pass')" aria-label="Show password">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </label>
+            <button type="button" class="settings-pass-btn" onclick="changePasswordFromSettings()">
+              <i data-lucide="lock"></i> Change Password
+            </button>
+          </div>
+        </article>
+
+        <!-- Customer Services -->
+        <article class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-support"><i data-lucide="headphones"></i></span>
+              <div>
+                <h3>Customer Services</h3>
+                <p>We're here to help you.</p>
+              </div>
+            </div>
+          </div>
+          <ul class="settings-support-list">
+            <li>
+              <a href="mailto:support@fintrackpro.local">
+                <span class="settings-support-ico is-email"><i data-lucide="mail"></i></span>
+                <div>
+                  <strong>Email Support</strong>
+                  <span>support@fintrackpro.local</span>
+                </div>
+                <i data-lucide="chevron-right" class="settings-support-arrow"></i>
+              </a>
+            </li>
+            <li>
+              <a href="tel:+63281234567">
+                <span class="settings-support-ico is-phone"><i data-lucide="phone"></i></span>
+                <div>
+                  <strong>Phone Support</strong>
+                  <span>+63 2 8123 4567</span>
+                </div>
+                <i data-lucide="chevron-right" class="settings-support-arrow"></i>
+              </a>
+            </li>
+            <li>
+              <div class="settings-support-static">
+                <span class="settings-support-ico is-hours"><i data-lucide="clock"></i></span>
+                <div>
+                  <strong>Hours</strong>
+                  <span>Mon - Fri 9:00 - 17:00 (PHT)</span>
+                </div>
+                <i data-lucide="chevron-right" class="settings-support-arrow"></i>
+              </div>
+            </li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="settings-page-quote">
+        <i data-lucide="leaf"></i>
+        <span>Small changes today, big financial wins tomorrow. ♡</span>
+      </div>
+    </section>
+
+    <!-- Profile Edit Modal -->
+    <div id="profile-edit-modal" class="auth-modal-overlay" style="display:none;z-index:1100;">
+      <div class="auth-modal settings-profile-modal">
+        <div class="flex items-center justify-center mb-3">
+          <div class="theme-icon-bg p-3 rounded-2xl text-white"><i data-lucide="user-cog" class="w-8 h-8"></i></div>
+        </div>
+        <h2 class="text-center">Edit Profile</h2>
+        <p class="subtitle">Update your name, phone, and contact details.</p>
+        <div class="space-y-3 text-left">
+          <label class="block text-xs font-bold text-[var(--ft-muted)]">First name
+            <input type="text" id="profile-edit-firstname" class="ft-input mt-1" autocomplete="given-name">
+          </label>
+          <label class="block text-xs font-bold text-[var(--ft-muted)]">Last name
+            <input type="text" id="profile-edit-lastname" class="ft-input mt-1" autocomplete="family-name">
+          </label>
+          <label class="block text-xs font-bold text-[var(--ft-muted)]">Email
+            <input type="email" id="profile-edit-email" class="ft-input mt-1" autocomplete="email">
+          </label>
+          <label class="block text-xs font-bold text-[var(--ft-muted)]">Phone
+            <input type="tel" id="profile-edit-phone" class="ft-input mt-1" placeholder="+63 …" autocomplete="tel">
+          </label>
+        </div>
+        <div class="flex gap-3 mt-4">
+          <button type="button" onclick="closeProfileEditModal()" class="ft-btn-ghost flex-1 h-11">Cancel</button>
+          <button type="button" onclick="saveProfileFromModal()" class="theme-btn-primary flex-1 h-11 rounded-xl text-white font-extrabold text-sm">Save</button>
+        </div>
+      </div>
+    </div>
+    </div><!-- /#app-views -->
+  </main>
+
+  <footer class="border-t border-[var(--ft-border)] py-6 text-center text-xs text-[var(--ft-muted)]">
+    FinTrack Pro &copy; 2026
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

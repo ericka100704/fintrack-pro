@@ -1,0 +1,16 @@
+﻿.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.before-bg-remove.png
+hero-scene.rembg-only.png
+hero-scene.isnet.png
+_strip_hero_bg.py
