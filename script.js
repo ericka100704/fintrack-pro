@@ -1,6 +1,21 @@
 /* FinTrack Pro — soft dashboard-first finance hub (localStorage + cloud accounts) */
 
-const FT_CLOUD_ACCOUNTS = 'https://crudcrud.com/api/fa23d18258b84dcebc568c2bb99c7c01/accounts';
+const FT_CLOUD_UPSTREAM = 'https://crudcrud.com/api/fa23d18258b84dcebc568c2bb99c7c01/accounts';
+
+function ftCloudBase() {
+  if (typeof location !== 'undefined' && /^https?:/.test(location.protocol) && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    return location.origin + '/api/accounts';
+  }
+  return FT_CLOUD_UPSTREAM;
+}
+
+function ftCloudItemUrl(id) {
+  var base = ftCloudBase();
+  if (base.indexOf('/api/accounts') >= 0 && base.indexOf('crudcrud.com') < 0) {
+    return base + '?id=' + encodeURIComponent(id);
+  }
+  return base + '/' + encodeURIComponent(id);
+}
 
 const ACCOUNT_SYSTEM = {
   _cloudSyncing: null,
@@ -52,7 +67,7 @@ const ACCOUNT_SYSTEM = {
       lastname: user.lastname || '',
       email: user.email || '',
       phone: user.phone || '',
-      avatar: user.avatar || '',
+      avatar: (user.avatar && String(user.avatar).length < 8000) ? user.avatar : '',
       password: user.password || '',
       created: user.created || '',
       updatedAt: user.updatedAt || user.created || new Date().toISOString(),
@@ -60,7 +75,7 @@ const ACCOUNT_SYSTEM = {
     };
   },
   async fetchCloudAccounts() {
-    const res = await fetch(FT_CLOUD_ACCOUNTS, { method: 'GET', headers: { 'Accept': 'application/json' } });
+    const res = await fetch(ftCloudBase(), { method: 'GET', headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error('Cloud lookup failed');
     const list = await res.json();
     return Array.isArray(list) ? list : [];
@@ -92,13 +107,13 @@ const ACCOUNT_SYSTEM = {
         this.saveCloudIds(ids);
         const merged = this.mergeUserMaps(this.getUsers(), remote);
         this.saveUsers(merged);
-        const keys = Object.keys(merged);
-        for (let i = 0; i < keys.length; i++) {
-          const name = keys[i];
-          if (!ids[name]) await this.pushUserToCloud(name);
-        }
       } catch (err) {
-        // Stay on localStorage if the network is down.
+        // Keep going so this device can still upload its local accounts.
+      }
+      const users = this.getUsers();
+      const keys = Object.keys(users);
+      for (let i = 0; i < keys.length; i++) {
+        await this.pushUserToCloud(keys[i]);
       }
     })();
     this._cloudSyncing = run;
@@ -115,14 +130,14 @@ const ACCOUNT_SYSTEM = {
     const existingId = ids[username];
     try {
       if (existingId) {
-        const res = await fetch(FT_CLOUD_ACCOUNTS + '/' + existingId, {
+        const res = await fetch(ftCloudItemUrl(existingId), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: body
         });
         if (res.ok) return true;
       }
-      const created = await fetch(FT_CLOUD_ACCOUNTS, {
+      const created = await fetch(ftCloudBase(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: body
