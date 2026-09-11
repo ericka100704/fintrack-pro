@@ -1,12 +1,142 @@
-/* FinTrack Pro — soft dashboard-first finance hub (localStorage) */
+/* FinTrack Pro — soft dashboard-first finance hub (localStorage + cloud accounts) */
+
+const FT_CLOUD_ACCOUNTS = 'https://crudcrud.com/api/fa23d18258b84dcebc568c2bb99c7c01/accounts';
 
 const ACCOUNT_SYSTEM = {
+  _cloudSyncing: null,
+  _cloudIds: null,
   getUsers() {
     try { return JSON.parse(localStorage.getItem('fintrack_users')) || {}; }
     catch { return {}; }
   },
   saveUsers(users) {
     localStorage.setItem('fintrack_users', JSON.stringify(users));
+  },
+  getCloudIds() {
+    if (this._cloudIds) return this._cloudIds;
+    try { this._cloudIds = JSON.parse(localStorage.getItem('fintrack_cloud_ids')) || {}; }
+    catch { this._cloudIds = {}; }
+    return this._cloudIds;
+  },
+  saveCloudIds(map) {
+    this._cloudIds = map || {};
+    localStorage.setItem('fintrack_cloud_ids', JSON.stringify(this._cloudIds));
+  },
+  userUpdatedAt(user) {
+    if (!user) return 0;
+    const t = Date.parse(user.updatedAt || user.created || 0);
+    return Number.isFinite(t) ? t : 0;
+  },
+  touchUser(user) {
+    if (!user) return user;
+    user.updatedAt = new Date().toISOString();
+    return user;
+  },
+  mergeUserMaps(a, b) {
+    const out = Object.assign({}, a || {});
+    Object.keys(b || {}).forEach((key) => {
+      if (!out[key]) {
+        out[key] = b[key];
+        return;
+      }
+      if (this.userUpdatedAt(b[key]) >= this.userUpdatedAt(out[key])) {
+        out[key] = b[key];
+      }
+    });
+    return out;
+  },
+  cloudRecordFromUser(username, user) {
+    return {
+      username: username,
+      firstname: user.firstname || '',
+      lastname: user.lastname || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      password: user.password || '',
+      created: user.created || '',
+      updatedAt: user.updatedAt || user.created || new Date().toISOString(),
+      data: user.data || this.emptyData()
+    };
+  },
+  async fetchCloudAccounts() {
+    const res = await fetch(FT_CLOUD_ACCOUNTS, { method: 'GET', headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error('Cloud lookup failed');
+    const list = await res.json();
+    return Array.isArray(list) ? list : [];
+  },
+  async ensureCloudSync(force) {
+    if (this._cloudSyncing && !force) return this._cloudSyncing;
+    const run = (async () => {
+      try {
+        const list = await this.fetchCloudAccounts();
+        const ids = this.getCloudIds();
+        const remote = {};
+        list.forEach((row) => {
+          if (!row) return;
+          const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
+          if (!username) return;
+          ids[username] = row._id;
+          remote[username] = {
+            firstname: row.firstname || '',
+            lastname: row.lastname || '',
+            email: row.email || '',
+            phone: row.phone || '',
+            avatar: row.avatar || '',
+            password: row.password || '',
+            created: row.created || '',
+            updatedAt: row.updatedAt || row.created || '',
+            data: row.data || this.emptyData()
+          };
+        });
+        this.saveCloudIds(ids);
+        const merged = this.mergeUserMaps(this.getUsers(), remote);
+        this.saveUsers(merged);
+        const keys = Object.keys(merged);
+        for (let i = 0; i < keys.length; i++) {
+          const name = keys[i];
+          if (!ids[name]) await this.pushUserToCloud(name);
+        }
+      } catch (err) {
+        // Stay on localStorage if the network is down.
+      }
+    })();
+    this._cloudSyncing = run;
+    try { await run; } finally {
+      if (this._cloudSyncing === run) this._cloudSyncing = null;
+    }
+  },
+  async pushUserToCloud(username) {
+    const users = this.getUsers();
+    const user = users[username];
+    if (!user) return false;
+    const body = JSON.stringify(this.cloudRecordFromUser(username, user));
+    const ids = this.getCloudIds();
+    const existingId = ids[username];
+    try {
+      if (existingId) {
+        const res = await fetch(FT_CLOUD_ACCOUNTS + '/' + existingId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: body
+        });
+        if (res.ok) return true;
+      }
+      const created = await fetch(FT_CLOUD_ACCOUNTS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: body
+      });
+      if (!created.ok) return false;
+      const saved = await created.json();
+      if (saved && saved._id) {
+        ids[username] = saved._id;
+        this.saveCloudIds(ids);
+      }
+      return true;
+    } catch (err) {
+      return false;
+    }
   },
   getCurrentUser() {
     try {
@@ -48,26 +178,34 @@ const ACCOUNT_SYSTEM = {
   register(firstname, lastname, email, password) {
     const users = this.getUsers();
     const username = email.split('@')[0];
-    if (users[username]) return { success: false, error: 'Email already registered! Please use a different email.' };
+    if (users[username] || this.findByEmail(email)) {
+      return { success: false, error: 'Email already registered! Please use a different email.' };
+    }
     const passwordCheck = this.validatePassword(password);
     if (!passwordCheck.valid) return { success: false, error: passwordCheck.message };
     users[username] = {
       firstname, lastname, email,
       password: this.hashPassword(password),
       created: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       data: this.emptyData()
     };
     localStorage.setItem('fintrack_created_' + username, new Date().toISOString());
     this.saveUsers(users);
-    return { success: true };
+    return { success: true, username: username };
   },
-  login(username, password) {
+  login(emailOrUsername, password) {
+    const raw = (emailOrUsername || '').trim();
+    const found = this.findByEmail(raw);
+    const username = found
+      ? found.username
+      : (raw.indexOf('@') >= 0 ? raw.split('@')[0] : raw);
     const users = this.getUsers();
-    const user = users[username];
+    const user = users[username] || (found && found.user);
     if (!user) return { success: false, error: 'User not found! Please check your email.' };
     if (user.password !== this.hashPassword(password)) return { success: false, error: 'Invalid password! Please try again.' };
     this.setCurrentUser(username);
-    return { success: true, username };
+    return { success: true, username: username };
   },
   logout() { this.setCurrentUser(null); },
   findByEmail(email) {
@@ -87,7 +225,9 @@ const ACCOUNT_SYSTEM = {
     if (!check.valid) return { success: false, error: check.message };
     const users = this.getUsers();
     users[found.username].password = this.hashPassword(newPassword);
+    this.touchUser(users[found.username]);
     this.saveUsers(users);
+    this.pushUserToCloud(found.username);
     return { success: true, username: found.username };
   },
   changePassword(username, currentPassword, newPassword) {
@@ -98,7 +238,9 @@ const ACCOUNT_SYSTEM = {
     const check = this.validatePassword(newPassword);
     if (!check.valid) return { success: false, error: check.message };
     user.password = this.hashPassword(newPassword);
+    this.touchUser(user);
     this.saveUsers(users);
+    this.pushUserToCloud(username);
     return { success: true };
   },
   updateProfile(username, patch) {
@@ -126,7 +268,9 @@ const ACCOUNT_SYSTEM = {
       if (clash) return { success: false, error: 'That email is already in use.' };
       user.email = email;
     }
+    this.touchUser(user);
     this.saveUsers(users);
+    this.pushUserToCloud(username);
     return { success: true };
   },
   hashPassword(password) {
@@ -156,7 +300,9 @@ const ACCOUNT_SYSTEM = {
     const users = this.getUsers();
     if (!users[username]) return false;
     users[username].data = data;
+    this.touchUser(users[username]);
     this.saveUsers(users);
+    this.pushUserToCloud(username);
     return true;
   },
   getSampleData() {
@@ -1049,8 +1195,9 @@ function closeForgotPassword() {
   document.getElementById('forgot-modal').style.display = 'none';
   unlockBodyScrollIfIdle();
 }
-function forgotLookupEmail() {
+async function forgotLookupEmail() {
   const email = document.getElementById('forgot-email').value.trim();
+  await ACCOUNT_SYSTEM.ensureCloudSync();
   const found = ACCOUNT_SYSTEM.findByEmail(email);
   if (!found) { showToast('No account found for that email.', 'rose'); return; }
   state.forgotUsername = found.username;
@@ -1072,25 +1219,30 @@ function forgotResetPassword() {
   showLoginModal();
 }
 
-function handleLoginForm(e) {
+async function handleLoginForm(e) {
   e.preventDefault();
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  const username = email.split('@')[0];
-  const result = ACCOUNT_SYSTEM.login(username, password);
+  await ACCOUNT_SYSTEM.ensureCloudSync();
+  let result = ACCOUNT_SYSTEM.login(email, password);
+  if (!result.success && /not found/i.test(result.error || '')) {
+    await ACCOUNT_SYSTEM.ensureCloudSync(true);
+    result = ACCOUNT_SYSTEM.login(email, password);
+  }
   if (result.success) {
     closeLoginModal();
     const user = ACCOUNT_SYSTEM.getCurrentUser();
     showToast('Welcome back, ' + user.firstname + '!', 'success');
     fireConfetti();
-    loadUserData(username);
+    loadUserData(result.username);
     updateUserUI();
     navigateTo('dashboard');
-    maybeStartTutorial(username);
+    maybeStartTutorial(result.username);
+    ACCOUNT_SYSTEM.pushUserToCloud(result.username);
   } else showToast(result.error, 'rose');
 }
 
-function handleRegisterForm(e) {
+async function handleRegisterForm(e) {
   e.preventDefault();
   const firstname = document.getElementById('register-firstname').value.trim();
   const lastname = document.getElementById('register-lastname').value.trim();
@@ -1100,19 +1252,21 @@ function handleRegisterForm(e) {
   if (password !== confirm) { showToast('Passwords do not match!', 'rose'); return; }
   const strengthResult = ACCOUNT_SYSTEM.validatePassword(password);
   if (!strengthResult.valid) { showToast(strengthResult.message, 'rose'); return; }
+  await ACCOUNT_SYSTEM.ensureCloudSync();
   const result = ACCOUNT_SYSTEM.register(firstname, lastname, email, password);
   if (result.success) {
     closeLoginModal();
     showToast('Account created! Welcome ' + firstname + '!', 'success');
     fireConfetti();
-    const username = email.split('@')[0];
-    const loginResult = ACCOUNT_SYSTEM.login(username, password);
+    const username = result.username || email.split('@')[0];
+    const loginResult = ACCOUNT_SYSTEM.login(email, password);
     if (loginResult.success) {
       loadUserData(username);
       updateUserUI();
       navigateTo('dashboard');
       maybeStartTutorial(username);
     }
+    ACCOUNT_SYSTEM.pushUserToCloud(username);
   } else showToast(result.error, 'rose');
 }
 
@@ -5702,6 +5856,15 @@ document.addEventListener('DOMContentLoaded', function () {
   } else {
     navigateTo('welcome');
   }
+
+  ACCOUNT_SYSTEM.ensureCloudSync().then(function () {
+    const synced = ACCOUNT_SYSTEM.getCurrentUser();
+    if (synced) {
+      loadUserData(synced.username);
+      updateUserUI();
+      ACCOUNT_SYSTEM.pushUserToCloud(synced.username);
+    }
+  });
 
   document.addEventListener('click', function (e) {
     const badge = document.querySelector('.user-badge');
