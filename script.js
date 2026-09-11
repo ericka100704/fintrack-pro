@@ -326,20 +326,20 @@ const ACCOUNT_SYSTEM = {
     const addDays = (n) => { const d = new Date(today); d.setDate(d.getDate() + n); return iso(d); };
     return {
       income: [
-        { id: 1, desc: 'Monthly Salary', amount: 18000, type: 'Active', date: addDays(-3) },
-        { id: 2, desc: 'Web Design Freelance', amount: 6500, type: 'Side Business', date: addDays(-10) },
-        { id: 3, desc: 'YouTube Ad Revenue', amount: 3200, type: 'Passive', date: addDays(-18) }
+        { id: 1, desc: 'Monthly Salary', amount: 18000, type: 'Active Income', date: addDays(-3) },
+        { id: 2, desc: 'Web Design Freelance', amount: 6500, type: 'Side Hustle', date: addDays(-10) },
+        { id: 3, desc: 'YouTube Ad Revenue', amount: 3200, type: 'Passive Income', date: addDays(-18) }
       ],
       expenses: [
-        { id: 1, desc: 'Food & Groceries', amount: 5000, category: 'Food', needWant: 'Need', mood: 'Happy', date: addDays(2) },
-        { id: 2, desc: 'Boarding House Rent', amount: 3800, category: 'Rent', needWant: 'Need', mood: 'Necessary', date: addDays(5) },
-        { id: 3, desc: 'Bike Gear', amount: 2200, category: 'Shopping', needWant: 'Want', mood: 'Treating Myself', date: addDays(-4) },
-        { id: 4, desc: 'Internet & Mobile', amount: 1500, category: 'Bills', needWant: 'Need', mood: 'Stressed', date: addDays(8) },
-        { id: 5, desc: 'Commute', amount: 1200, category: 'Transportation', needWant: 'Need', mood: 'Stressed', date: addDays(-1) }
+        { id: 1, desc: 'Food & Groceries', amount: 5000, category: 'Food', needWant: 'Need', mood: 'Happy', date: addDays(2), deductFrom: 'Income' },
+        { id: 2, desc: 'Boarding House Rent', amount: 3800, category: 'Rent', needWant: 'Need', mood: 'Necessary', date: addDays(5), deductFrom: 'Income' },
+        { id: 3, desc: 'Bike Gear', amount: 2200, category: 'Shopping', needWant: 'Want', mood: 'Treating Myself', date: addDays(-4), deductFrom: 'Income' },
+        { id: 4, desc: 'Internet & Mobile', amount: 1500, category: 'Bills & Utilities', needWant: 'Need', mood: 'Stressed', date: addDays(8), deductFrom: 'Income' },
+        { id: 5, desc: 'Commute', amount: 1200, category: 'Transportation', needWant: 'Need', mood: 'Stressed', date: addDays(-1), deductFrom: 'Income' }
       ],
       savings: [
         { id: 1, desc: 'Emergency Vault', amount: 4500, target: 12000, dueDate: addDays(90), account: 'Digital Bank', isCompleted: false, isEmergency: true, monthly: 1500, category: 'Emergency Fund', date: addDays(-20) },
-        { id: 2, desc: '6-Month Time Deposit', amount: 5000, target: 30000, dueDate: addDays(180), account: 'Traditional Bank', isCompleted: false, isEmergency: false, monthly: 1000, category: 'Medium Savings', date: addDays(-12) },
+        { id: 2, desc: '6-Month Time Deposit', amount: 5000, target: 30000, dueDate: addDays(180), account: 'Traditional Bank', isCompleted: false, isEmergency: false, monthly: 1000, category: 'Medium-Term', date: addDays(-12) },
         { id: 3, desc: 'Vacation Fund', amount: 2000, target: 20000, dueDate: addDays(200), account: 'Cash Vault', isCompleted: false, isEmergency: false, monthly: 500, category: 'Travel', date: addDays(-5) },
         { id: 4, desc: 'Laptop Downpayment', amount: 8000, target: 8000, dueDate: addDays(-30), account: 'Digital Bank', isCompleted: true, isEmergency: false, monthly: 0, category: 'Education', date: addDays(0), completedAt: addDays(0) }
       ],
@@ -349,9 +349,9 @@ const ACCOUNT_SYSTEM = {
         { id: 3, desc: 'Small Business Stake', amount: 1500, currentValue: 1740, monthly: 0, expectedReturn: 12, category: 'Business', date: addDays(-7) }
       ],
       protection: [
-        { id: 1, desc: 'Emergency Fund Buffer', amount: 50000, monthly: 1500, policyType: 'Emergency Fund', date: addDays(-30) },
-        { id: 2, desc: 'PhilHealth', amount: 100000, monthly: 800, policyType: 'Health', date: addDays(-60) },
-        { id: 3, desc: 'Life Cover', amount: 150000, monthly: 1200, policyType: 'Life', date: addDays(-90) }
+        { id: 1, desc: 'Emergency Fund Buffer', amount: 50000, monthly: 1500, policyType: 'Emergency Protection', date: addDays(-30) },
+        { id: 2, desc: 'PhilHealth', amount: 100000, monthly: 800, policyType: 'Health Insurance', date: addDays(-60) },
+        { id: 3, desc: 'Life Cover', amount: 150000, monthly: 1200, policyType: 'Life Insurance', date: addDays(-90) }
       ],
       goals: [],
       settings: {
@@ -381,8 +381,8 @@ const TUTORIAL_STEPS = [
   { title: 'Income', body: 'This is the Income page — record salary and side income. Remaining Balance = Income − Spending − Savings − Investments − Protection.', view: 'income' },
   { title: 'Spending', body: 'You are on the Spending page — log expenses with Needs vs Wants, and set a monthly budget in Settings for alerts.', view: 'spending' },
   { title: 'Savings', body: 'This is Savings — build reserves, mark Emergency Fund accounts, and track monthly contributions.', view: 'savings' },
-  { title: 'Investments', body: 'This is the Investment page — track Stocks/Funds, Business, Bonds, Property, or Other assets.', view: 'investment' },
-  { title: 'Protection', body: 'You are on Protection — add Health, Life, Property, Insurance, and Emergency Fund coverage for your safety net score.', view: 'protection' },
+  { title: 'Investments', body: 'This is the Investment page — track stocks, funds, bonds, property, crypto, gold, and other assets.', view: 'investment' },
+  { title: 'Protection', body: 'You are on Protection — add health, life, property, family, disability, and emergency coverage for your safety net score.', view: 'protection' },
   { title: 'Analytics', body: 'This is Analytics — see trends, allocation, and your financial health score across pillars.', view: 'analytics' },
   { title: 'Financial Health', body: 'Back on Dashboard — your Health Score /100 averages five pillar scores so you always know the next best money move.', view: 'dashboard' }
 ];
@@ -442,8 +442,19 @@ function ensureMigratedData(data) {
     (data && data.settings && data.settings.notifications) || {}
   );
   delete out.inventory;
-  out.expenses = (out.expenses || []).map(e => Object.assign({ needWant: 'Need', date: todayISO(), category: 'Other', mood: 'Necessary' }, e));
-  out.income = (out.income || []).map(i => Object.assign({ date: todayISO(), type: 'Active' }, i));
+  out.expenses = (out.expenses || []).map(e => Object.assign({
+    needWant: 'Need',
+    date: todayISO(),
+    category: 'Other Expenses',
+    mood: 'Necessary',
+    deductFrom: 'Income'
+  }, e, {
+    category: normalizeSpendCat(e.category || 'Other'),
+    deductFrom: normalizeDeductFrom(e.deductFrom)
+  }));
+  out.income = (out.income || []).map(i => Object.assign({ date: todayISO(), type: 'Active Income' }, i, {
+    type: normalizeIncomeType(i.type)
+  }));
   out.savings = (out.savings || []).map(s => {
     const base = Object.assign({
       isEmergency: false,
@@ -460,9 +471,14 @@ function ensureMigratedData(data) {
       if (/educat|school|tuition|laptop/.test(d)) base.category = 'Education';
       else if (/travel|vacation|trip/.test(d)) base.category = 'Travel';
       else if (/business|startup/.test(d)) base.category = 'Business';
-      else if (/long|retire|mp2/.test(d)) base.category = 'Long-Term';
-      else if (/medium|deposit|time/.test(d)) base.category = 'Medium Savings';
+      else if (/retir/.test(d)) base.category = 'Retirement';
+      else if (/home|property|house/.test(d)) base.category = 'Home/Property';
+      else if (/invest/.test(d)) base.category = 'Investment';
+      else if (/long|mp2/.test(d)) base.category = 'Long-Term';
+      else if (/medium|deposit|time/.test(d)) base.category = 'Medium-Term';
       else base.category = 'Short-Term';
+    } else {
+      base.category = normalizeSavCat(base.category);
     }
     if (!(Number(base.target) > 0)) {
       base.target = Math.max(Number(base.amount) || 0, (Number(base.monthly) || 0) * 6) || Number(base.amount) || 0;
@@ -508,6 +524,128 @@ function ensureMigratedData(data) {
   return out;
 }
 
+function normalizeIncomeType(t) {
+  const s = String(t || '').trim();
+  const map = {
+    Active: 'Active Income',
+    'Active Income': 'Active Income',
+    'Side Business': 'Side Hustle',
+    'Side Hustle': 'Side Hustle',
+    Passive: 'Passive Income',
+    'Passive Income': 'Passive Income',
+    Business: 'Business',
+    'Investment Income': 'Investment Income',
+    Allowance: 'Allowance',
+    Gifts: 'Gifts',
+    'Rental Income': 'Rental Income',
+    'Online Income': 'Online Income',
+    'Commission & Tips': 'Commission & Tips',
+    'Government Benefits': 'Government Benefits',
+    Other: 'Other Income',
+    'Other Income': 'Other Income'
+  };
+  if (map[s]) return map[s];
+  const low = s.toLowerCase();
+  if (/side/.test(low)) return 'Side Hustle';
+  if (/passive/.test(low)) return 'Passive Income';
+  if (/active/.test(low)) return 'Active Income';
+  if (/commission|tips/.test(low)) return 'Commission & Tips';
+  if (/government|benefit/.test(low)) return 'Government Benefits';
+  if (/rental/.test(low)) return 'Rental Income';
+  if (/online/.test(low)) return 'Online Income';
+  if (/invest/.test(low)) return 'Investment Income';
+  if (/allowance/.test(low)) return 'Allowance';
+  if (/gift/.test(low)) return 'Gifts';
+  if (/business/.test(low)) return 'Business';
+  return 'Other Income';
+}
+
+function normalizeSpendCat(c) {
+  const s = String(c || '').trim();
+  const map = {
+    Food: 'Food',
+    Transportation: 'Transportation',
+    Bills: 'Bills & Utilities',
+    'Bills & Utilities': 'Bills & Utilities',
+    Health: 'Healthcare',
+    Healthcare: 'Healthcare',
+    Education: 'Education',
+    Shopping: 'Shopping',
+    Entertainment: 'Entertainment',
+    Gifts: 'Gifts',
+    'Debt Payments': 'Debt Payments',
+    'Donations & Charity': 'Donations & Charity',
+    Pets: 'Pets',
+    Emergency: 'Emergency',
+    Rent: 'Rent',
+    Other: 'Other Expenses',
+    Others: 'Other Expenses',
+    'Other Expenses': 'Other Expenses'
+  };
+  if (map[s]) return map[s];
+  const low = s.toLowerCase();
+  if (/bill|utilit/.test(low)) return 'Bills & Utilities';
+  if (/health/.test(low)) return 'Healthcare';
+  if (/debt/.test(low)) return 'Debt Payments';
+  if (/donat|charity/.test(low)) return 'Donations & Charity';
+  if (/pet/.test(low)) return 'Pets';
+  if (/emergenc/.test(low)) return 'Emergency';
+  if (/rent/.test(low)) return 'Rent';
+  return 'Other Expenses';
+}
+
+function normalizeDeductFrom(v) {
+  const s = String(v || '').trim();
+  const allowed = ['Income', 'Savings', 'Investment', 'Business', 'Emergency Fund', 'Protection', 'Other'];
+  if (allowed.indexOf(s) >= 0) return s;
+  const low = s.toLowerCase();
+  if (/emergenc/.test(low)) return 'Emergency Fund';
+  if (/invest/.test(low)) return 'Investment';
+  if (/sav/.test(low)) return 'Savings';
+  if (/business/.test(low)) return 'Business';
+  if (/protect/.test(low)) return 'Protection';
+  if (/income/.test(low)) return 'Income';
+  return 'Income';
+}
+
+function normalizeSavCat(c) {
+  const s = String(c || '').trim();
+  if (!s) return 'Short-Term';
+  const map = {
+    'Short-Term': 'Short-Term',
+    'Medium Savings': 'Medium-Term',
+    'Medium-Term': 'Medium-Term',
+    'Long-Term': 'Long-Term',
+    Emergency: 'Emergency Fund',
+    'Emergency Fund': 'Emergency Fund',
+    Education: 'Education',
+    Travel: 'Travel',
+    Business: 'Business',
+    Investment: 'Investment',
+    'Home/Property': 'Home/Property',
+    Retirement: 'Retirement',
+    Other: 'Other'
+  };
+  if (map[s]) return map[s];
+  const low = s.toLowerCase();
+  if (/emergenc/.test(low)) return 'Emergency Fund';
+  if (/medium/.test(low)) return 'Medium-Term';
+  if (/long/.test(low)) return 'Long-Term';
+  if (/short/.test(low)) return 'Short-Term';
+  if (/educat/.test(low)) return 'Education';
+  if (/travel/.test(low)) return 'Travel';
+  if (/business/.test(low)) return 'Business';
+  if (/invest/.test(low)) return 'Investment';
+  if (/home|property/.test(low)) return 'Home/Property';
+  if (/retir/.test(low)) return 'Retirement';
+  return 'Other';
+}
+
+function isBillCategory(cat) {
+  const c = normalizeSpendCat(cat);
+  return c === 'Bills & Utilities' || c === 'Rent';
+}
+
 function normalizeInvestCat(c) {
   const map = {
     'Stocks/Funds': 'Stocks/Funds',
@@ -516,21 +654,43 @@ function normalizeInvestCat(c) {
     'Bonds/Fixed income': 'Bonds/Fixed Income',
     'Bonds/Fixed Income': 'Bonds/Fixed Income',
     'Property': 'Property',
-    'Cash/Short-Term': 'Cash/Short-Term',
-    'Cash': 'Cash/Short-Term',
+    'Retirement': 'Retirement Investment',
+    'Retirement Investment': 'Retirement Investment',
+    'Mutual Funds/ETFs': 'Mutual Funds / ETFs',
+    'Mutual Funds / ETFs': 'Mutual Funds / ETFs',
+    'Cryptocurrency': 'Cryptocurrency',
+    'Crypto': 'Cryptocurrency',
+    'Gold / Precious Metals': 'Gold / Precious Metals',
+    'Gold/Precious Metals': 'Gold / Precious Metals',
+    'Cash/Short-Term': 'Other',
+    'Cash': 'Other',
     'Other': 'Other',
     'Other Investment': 'Other'
   };
-  return map[c] || 'Other';
+  if (map[c]) return map[c];
+  const low = String(c || '').toLowerCase();
+  if (/mutual|etf/.test(low)) return 'Mutual Funds / ETFs';
+  if (/crypto/.test(low)) return 'Cryptocurrency';
+  if (/gold|precious/.test(low)) return 'Gold / Precious Metals';
+  if (/retir/.test(low)) return 'Retirement Investment';
+  if (/stock|fund/.test(low)) return 'Stocks/Funds';
+  if (/bond/.test(low)) return 'Bonds/Fixed Income';
+  if (/business/.test(low)) return 'Business';
+  if (/propert/.test(low)) return 'Property';
+  if (/cash/.test(low)) return 'Other';
+  return 'Other';
 }
 
 function defaultInvestReturn(cat) {
   const rates = {
     'Stocks/Funds': 8,
-    'Bonds/Fixed Income': 4,
     'Business': 12,
+    'Bonds/Fixed Income': 4,
     'Property': 6,
-    'Cash/Short-Term': 2,
+    'Retirement Investment': 7,
+    'Mutual Funds / ETFs': 8,
+    'Cryptocurrency': 15,
+    'Gold / Precious Metals': 5,
     'Other': 5
   };
   return rates[cat] || 5;
@@ -547,13 +707,18 @@ function estimateInvestCurrentValue(amount, dateStr, annualPct) {
 }
 
 function normalizeProtType(t) {
-  if (!t) return 'Insurance';
-  if (/emergency/i.test(t)) return 'Emergency Fund';
-  if (/health/i.test(t)) return 'Health';
-  if (/life/i.test(t)) return 'Life';
-  if (/proper|property/i.test(t)) return 'Property';
-  if (/insurance/i.test(t)) return 'Insurance';
-  return t;
+  if (!t) return 'Insurance Coverage';
+  const s = String(t);
+  if (/personal\s*accident/i.test(s) || /accident/i.test(s)) return 'Personal Accident Insurance';
+  if (/disabilit/i.test(s)) return 'Disability Insurance';
+  if (/family/i.test(s)) return 'Family Insurance';
+  if (/emergency/i.test(s)) return 'Emergency Protection';
+  if (/health/i.test(s)) return 'Health Insurance';
+  if (/life/i.test(s)) return 'Life Insurance';
+  if (/proper|property/i.test(s)) return 'Property Insurance';
+  if (/other/i.test(s)) return 'Other Protection';
+  if (/insurance/i.test(s)) return 'Insurance Coverage';
+  return 'Insurance Coverage';
 }
 
 /* ---------- Totals & scoring ---------- */
@@ -569,7 +734,7 @@ function totals() {
   const spendingRatio = income > 0 ? (spending / income) * 100 : 0;
   const monthlySpend = spending;
   const ef = state.savings.filter(s => s.isEmergency).reduce((a, s) => a + Number(s.amount), 0)
-    + state.protection.filter(p => p.policyType === 'Emergency Fund').reduce((a, p) => a + Number(p.amount), 0);
+    + state.protection.filter(p => /emergency/i.test(String(p.policyType || ''))).reduce((a, p) => a + Number(p.amount), 0);
   const efMonths = monthlySpend > 0 ? ef / monthlySpend : (ef > 0 ? 99 : 0);
   return { income, spending, savings, investments, protection, remaining, savingsRate, spendingRatio, ef, efMonths };
 }
@@ -633,10 +798,10 @@ function pillarScores() {
   const investScore = t.investments <= 0
     ? 0
     : Math.min(100, t.income > 0 ? 40 + Math.min(60, (t.investments / t.income) * 100) : 50);
-  const types = new Set(state.protection.map(function (p) { return p.policyType; }));
+  const types = new Set(state.protection.map(function (p) { return normalizeProtType(p.policyType); }));
   const protScore = state.protection.length === 0
     ? 0
-    : Math.min(100, 20 + types.size * 16 + (t.efMonths >= 3 ? 20 : t.efMonths >= 1 ? 10 : 0));
+    : Math.min(100, Math.round((types.size / 9) * 80) + (t.efMonths >= 3 ? 20 : t.efMonths >= 1 ? 10 : 0));
   return {
     income: Math.round(incomeScore),
     savings: Math.round(savingsScore),
@@ -813,7 +978,7 @@ function buildNotifications() {
     });
   }
   state.expenses.forEach(e => {
-    if (e.date && e.needWant === 'Need' && ['Bills', 'Rent'].includes(e.category)) {
+    if (e.date && e.needWant === 'Need' && isBillCategory(e.category)) {
       const days = Math.ceil((new Date(e.date) - new Date()) / 86400000);
       if (days >= 0 && days <= 10) {
         notes.push({
@@ -1234,31 +1399,57 @@ function forgotResetPassword() {
   showLoginModal();
 }
 
+function setAuthBtnLoading(btn, isLoading, loadingText) {
+  if (!btn) return;
+  if (isLoading) {
+    if (!btn.dataset.idleHtml) btn.dataset.idleHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.classList.add('is-loading');
+    btn.innerHTML = '<span class="auth-btn-spinner" aria-hidden="true"></span><span>' + (loadingText || 'Loading...') + '</span>';
+  } else {
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.classList.remove('is-loading');
+    if (btn.dataset.idleHtml) btn.innerHTML = btn.dataset.idleHtml;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
 async function handleLoginForm(e) {
   e.preventDefault();
+  const btn = document.getElementById('login-submit-btn') || (e.target && e.target.querySelector('.submit-btn'));
+  if (btn && btn.disabled) return;
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  await ACCOUNT_SYSTEM.ensureCloudSync();
-  let result = ACCOUNT_SYSTEM.login(email, password);
-  if (!result.success && /not found/i.test(result.error || '')) {
-    await ACCOUNT_SYSTEM.ensureCloudSync(true);
-    result = ACCOUNT_SYSTEM.login(email, password);
+  setAuthBtnLoading(btn, true, 'Signing in...');
+  try {
+    await ACCOUNT_SYSTEM.ensureCloudSync();
+    let result = ACCOUNT_SYSTEM.login(email, password);
+    if (!result.success && /not found/i.test(result.error || '')) {
+      await ACCOUNT_SYSTEM.ensureCloudSync(true);
+      result = ACCOUNT_SYSTEM.login(email, password);
+    }
+    if (result.success) {
+      closeLoginModal();
+      const user = ACCOUNT_SYSTEM.getCurrentUser();
+      showToast('Welcome back, ' + user.firstname + '!', 'success');
+      fireConfetti();
+      loadUserData(result.username);
+      updateUserUI();
+      navigateTo('dashboard');
+      maybeStartTutorial(result.username);
+      ACCOUNT_SYSTEM.pushUserToCloud(result.username);
+    } else showToast(result.error, 'rose');
+  } finally {
+    setAuthBtnLoading(btn, false);
   }
-  if (result.success) {
-    closeLoginModal();
-    const user = ACCOUNT_SYSTEM.getCurrentUser();
-    showToast('Welcome back, ' + user.firstname + '!', 'success');
-    fireConfetti();
-    loadUserData(result.username);
-    updateUserUI();
-    navigateTo('dashboard');
-    maybeStartTutorial(result.username);
-    ACCOUNT_SYSTEM.pushUserToCloud(result.username);
-  } else showToast(result.error, 'rose');
 }
 
 async function handleRegisterForm(e) {
   e.preventDefault();
+  const btn = document.getElementById('register-submit-btn') || (e.target && e.target.querySelector('.submit-btn'));
+  if (btn && btn.disabled) return;
   const firstname = document.getElementById('register-firstname').value.trim();
   const lastname = document.getElementById('register-lastname').value.trim();
   const email = document.getElementById('register-email').value.trim();
@@ -1267,22 +1458,27 @@ async function handleRegisterForm(e) {
   if (password !== confirm) { showToast('Passwords do not match!', 'rose'); return; }
   const strengthResult = ACCOUNT_SYSTEM.validatePassword(password);
   if (!strengthResult.valid) { showToast(strengthResult.message, 'rose'); return; }
-  await ACCOUNT_SYSTEM.ensureCloudSync();
-  const result = ACCOUNT_SYSTEM.register(firstname, lastname, email, password);
-  if (result.success) {
-    closeLoginModal();
-    showToast('Account created! Welcome ' + firstname + '!', 'success');
-    fireConfetti();
-    const username = result.username || email.split('@')[0];
-    const loginResult = ACCOUNT_SYSTEM.login(email, password);
-    if (loginResult.success) {
-      loadUserData(username);
-      updateUserUI();
-      navigateTo('dashboard');
-      maybeStartTutorial(username);
-    }
-    ACCOUNT_SYSTEM.pushUserToCloud(username);
-  } else showToast(result.error, 'rose');
+  setAuthBtnLoading(btn, true, 'Creating account...');
+  try {
+    await ACCOUNT_SYSTEM.ensureCloudSync();
+    const result = ACCOUNT_SYSTEM.register(firstname, lastname, email, password);
+    if (result.success) {
+      closeLoginModal();
+      showToast('Account created! Welcome ' + firstname + '!', 'success');
+      fireConfetti();
+      const username = result.username || email.split('@')[0];
+      const loginResult = ACCOUNT_SYSTEM.login(email, password);
+      if (loginResult.success) {
+        loadUserData(username);
+        updateUserUI();
+        navigateTo('dashboard');
+        maybeStartTutorial(username);
+      }
+      ACCOUNT_SYSTEM.pushUserToCloud(username);
+    } else showToast(result.error, 'rose');
+  } finally {
+    setAuthBtnLoading(btn, false);
+  }
 }
 
 function handleSocialLogin(provider) {
@@ -1306,12 +1502,10 @@ function closeConfirmModal(confirmed) {
 }
 
 function handleLogout() {
-  const dd = document.getElementById('user-dropdown');
-  if (dd) dd.classList.remove('active');
   showConfirmModal('Sign Out', 'Are you sure you want to sign out?', function () {
     ACCOUNT_SYSTEM.logout();
-    document.getElementById('user-section').style.display = 'none';
-    document.getElementById('auth-btn-nav').style.display = 'flex';
+    const authBtn = document.getElementById('auth-btn-nav');
+    if (authBtn) authBtn.style.display = 'flex';
     const sidebarAuth = document.getElementById('sidebar-auth-section');
     const sidebarUser = document.getElementById('sidebar-user-section');
     if (sidebarAuth) sidebarAuth.style.display = 'block';
@@ -1319,7 +1513,10 @@ function handleLogout() {
     const headName = document.getElementById('sidebar-head-name');
     const headAvatar = document.getElementById('sidebar-head-avatar');
     if (headName) headName.textContent = 'Guest';
-    if (headAvatar) headAvatar.textContent = 'G';
+    if (headAvatar) {
+      headAvatar.style.backgroundImage = '';
+      headAvatar.textContent = 'G';
+    }
     Object.assign(state, {
       income: [], expenses: [], savings: [], investments: [], protection: [], goals: [],
       settings: ACCOUNT_SYSTEM.defaultSettings(), notificationsLog: [], readNotificationKeys: [], sampleMode: false
@@ -1329,35 +1526,17 @@ function handleLogout() {
   });
 }
 
-function toggleUserDropdown() {
-  closeNotificationsDropdown();
-  document.getElementById('user-dropdown').classList.toggle('active');
-}
-
 function updateUserUI() {
   const user = ACCOUNT_SYSTEM.getCurrentUser();
   if (!user) return;
-  document.getElementById('user-section').style.display = 'flex';
-  document.getElementById('auth-btn-nav').style.display = 'none';
+  const authBtn = document.getElementById('auth-btn-nav');
+  if (authBtn) authBtn.style.display = 'none';
   const sidebarAuth = document.getElementById('sidebar-auth-section');
   const sidebarUser = document.getElementById('sidebar-user-section');
   if (sidebarAuth) sidebarAuth.style.display = 'none';
   if (sidebarUser) sidebarUser.style.display = 'block';
   const fullName = (user.firstname + ' ' + user.lastname).trim();
   const initial = (user.firstname || 'U').charAt(0).toUpperCase();
-  const navAvatar = document.getElementById('user-avatar');
-  if (navAvatar) {
-    if (user.avatar) {
-      navAvatar.textContent = '';
-      navAvatar.style.backgroundImage = 'url(' + user.avatar + ')';
-      navAvatar.style.backgroundSize = 'cover';
-      navAvatar.style.backgroundPosition = 'center';
-    } else {
-      navAvatar.style.backgroundImage = '';
-      navAvatar.textContent = initial;
-    }
-  }
-  document.getElementById('user-display-name').textContent = fullName;
   const headName = document.getElementById('sidebar-head-name');
   const headAvatar = document.getElementById('sidebar-head-avatar');
   if (headName) headName.textContent = fullName;
@@ -2003,7 +2182,7 @@ function scheduleDatesSet() {
   const set = new Set();
   (state.savings || []).forEach(function (g) { if (g.dueDate && !g.isCompleted) set.add(g.dueDate); });
   state.expenses.forEach(e => {
-    if (e.date && (e.needWant === 'Need' || ['Bills', 'Rent'].includes(e.category))) set.add(e.date);
+    if (e.date && (e.needWant === 'Need' || isBillCategory(e.category))) set.add(e.date);
   });
   return set;
 }
@@ -2136,9 +2315,9 @@ function updateSummaryMetrics() {
   animateNumber(document.getElementById('stat-savings'), t.savings);
   animateNumber(document.getElementById('stat-investments'), t.investments);
   const protEl = document.getElementById('stat-protection');
-  const types = new Set(state.protection.map(p => p.policyType));
+  const types = new Set(state.protection.map(p => normalizeProtType(p.policyType)));
   if (protEl) {
-    protEl.textContent = types.size ? types.size + '/5 types' : 'None';
+    protEl.textContent = types.size ? types.size + '/9 types' : 'None';
   }
   const protTrend = document.getElementById('stat-protection-trend');
   if (protTrend) {
@@ -2351,8 +2530,6 @@ function closeNotificationsDropdown() {
 function openNotificationsDropdown() {
   const panel = document.getElementById('notif-dropdown');
   const btn = document.getElementById('header-notif-btn');
-  const userDd = document.getElementById('user-dropdown');
-  if (userDd) userDd.classList.remove('active');
   renderNotificationsCenter();
   if (panel) {
     panel.hidden = false;
@@ -2423,24 +2600,77 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+const INCOME_TYPE_ORDER = [
+  'Active Income',
+  'Side Hustle',
+  'Business',
+  'Passive Income',
+  'Investment Income',
+  'Allowance',
+  'Gifts',
+  'Rental Income',
+  'Online Income',
+  'Commission & Tips',
+  'Government Benefits',
+  'Other Income'
+];
+
 const INCOME_TYPE_COLORS = {
-  Active: '#B46A72',
-  'Side Business': '#A8B58A',
-  Passive: '#A9B7C6'
+  'Active Income': '#B46A72',
+  'Side Hustle': '#A8B58A',
+  'Business': '#6f8458',
+  'Passive Income': '#A9B7C6',
+  'Investment Income': '#D4A574',
+  'Allowance': '#7f9bb8',
+  'Gifts': '#c48a9a',
+  'Rental Income': '#8a9a78',
+  'Online Income': '#9b8ec4',
+  'Commission & Tips': '#e8a05c',
+  'Government Benefits': '#6b7599',
+  'Other Income': '#9aa3ad'
+};
+
+const INCOME_TYPE_ICONS = {
+  'Active Income': 'briefcase',
+  'Side Hustle': 'laptop',
+  'Business': 'store',
+  'Passive Income': 'play',
+  'Investment Income': 'line-chart',
+  'Allowance': 'wallet',
+  'Gifts': 'gift',
+  'Rental Income': 'home',
+  'Online Income': 'globe',
+  'Commission & Tips': 'coins',
+  'Government Benefits': 'landmark',
+  'Other Income': 'circle-dot'
 };
 
 function incomeTypeClass(type) {
-  if (type === 'Side Business') return 'is-side';
-  if (type === 'Passive') return 'is-passive';
-  return 'is-active';
+  const t = normalizeIncomeType(type);
+  const map = {
+    'Active Income': 'is-active',
+    'Side Hustle': 'is-side',
+    'Business': 'is-business',
+    'Passive Income': 'is-passive',
+    'Investment Income': 'is-invest',
+    'Allowance': 'is-allowance',
+    'Gifts': 'is-gift',
+    'Rental Income': 'is-rental',
+    'Online Income': 'is-online',
+    'Commission & Tips': 'is-commission',
+    'Government Benefits': 'is-gov',
+    'Other Income': 'is-other'
+  };
+  return map[t] || 'is-other';
 }
 
 function incomeSourceIcon(item) {
+  const t = normalizeIncomeType(item.type);
+  if (INCOME_TYPE_ICONS[t]) return INCOME_TYPE_ICONS[t];
   const d = String(item.desc || '').toLowerCase();
-  const t = String(item.type || '');
-  if (/youtube|ad|stream|passive/.test(d) || t === 'Passive') return 'play';
-  if (/freelance|web|design|laptop|side/.test(d) || t === 'Side Business') return 'laptop';
-  if (/salary|job|wage|payroll/.test(d) || t === 'Active') return 'briefcase';
+  if (/youtube|ad|stream|passive/.test(d)) return 'play';
+  if (/freelance|web|design|laptop|side/.test(d)) return 'laptop';
+  if (/salary|job|wage|payroll/.test(d)) return 'briefcase';
   return 'wallet';
 }
 
@@ -2506,7 +2736,7 @@ function openIncomeModal(editId) {
   if (idEl) idEl.value = item ? String(item.id) : '';
   if (desc) desc.value = item ? item.desc : '';
   if (amount) amount.value = item ? item.amount : '';
-  if (type) type.value = item ? (item.type || 'Active') : '';
+  if (type) type.value = item ? normalizeIncomeType(item.type) : '';
   if (date) date.value = item ? (item.date || todayISO()) : todayISO();
   if (note) note.value = item ? (item.note || '') : '';
   updateIncomeNoteCounter();
@@ -2581,7 +2811,7 @@ function submitIncomeModal(e) {
   const payload = {
     desc: document.getElementById('income-modal-desc').value.trim(),
     amount: parseFloat(document.getElementById('income-modal-amount').value),
-    type: typeVal,
+    type: normalizeIncomeType(typeVal),
     date: document.getElementById('income-modal-date').value || todayISO(),
     note: (document.getElementById('income-modal-note').value || '').trim().slice(0, 200)
   };
@@ -2610,14 +2840,18 @@ function populateIncomeSourceFilter() {
 
 function renderIncomeBreakdownAndInsights(chartRows) {
   const total = chartRows.reduce(function (a, i) { return a + Number(i.amount || 0); }, 0) || 0;
-  const typeMap = { Active: 0, 'Side Business': 0, Passive: 0 };
+  const typeMap = {};
   chartRows.forEach(function (i) {
-    const t = i.type || 'Active';
+    const t = normalizeIncomeType(i.type);
     typeMap[t] = (typeMap[t] || 0) + Number(i.amount || 0);
+  });
+  const labels = INCOME_TYPE_ORDER.filter(function (k) { return typeMap[k] > 0; });
+  Object.keys(typeMap).forEach(function (k) {
+    if (labels.indexOf(k) === -1 && typeMap[k] > 0) labels.push(k);
   });
   const legend = document.getElementById('income-type-legend');
   if (legend) {
-    legend.innerHTML = Object.keys(typeMap).map(function (label) {
+    legend.innerHTML = (labels.length ? labels : INCOME_TYPE_ORDER.slice(0, 3)).map(function (label) {
       const amt = typeMap[label] || 0;
       const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
       const color = INCOME_TYPE_COLORS[label] || '#B46A72';
@@ -2630,12 +2864,12 @@ function renderIncomeBreakdownAndInsights(chartRows) {
 
   const breakdown = document.getElementById('income-breakdown-list');
   if (breakdown) {
-    const icons = { Active: 'briefcase', 'Side Business': 'laptop', Passive: 'play' };
-    breakdown.innerHTML = Object.keys(typeMap).map(function (label) {
+    breakdown.innerHTML = (labels.length ? labels : INCOME_TYPE_ORDER.slice(0, 3)).map(function (label) {
       const amt = typeMap[label] || 0;
       const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
       const color = INCOME_TYPE_COLORS[label] || '#B46A72';
-      return '<li><div class="ico" style="background:' + color + '22;color:' + color + '"><i data-lucide="' + icons[label] + '"></i></div>'
+      const icon = INCOME_TYPE_ICONS[label] || 'wallet';
+      return '<li><div class="ico" style="background:' + color + '22;color:' + color + '"><i data-lucide="' + icon + '"></i></div>'
         + '<div class="copy"><strong>' + label + '</strong><span>' + peso(amt) + ' · ' + pct + '%</span></div></li>';
     }).join('');
   }
@@ -2710,7 +2944,7 @@ function renderIncomePage() {
         const icon = incomeSourceIcon(i);
         return '<tr>'
           + '<td><div class="income-source-cell"><span class="income-source-icon"><i data-lucide="' + icon + '"></i></span>' + escapeHtml(i.desc) + '</div></td>'
-          + '<td><span class="income-type-pill ' + pill + '">' + escapeHtml(i.type || 'Active') + '</span></td>'
+          + '<td><span class="income-type-pill ' + pill + '">' + escapeHtml(normalizeIncomeType(i.type)) + '</span></td>'
           + '<td>' + escapeHtml(i.date || '') + '</td>'
           + '<td class="income-amount-pos">' + peso(i.amount) + '</td>'
           + '<td>' + peso(fullRun[i.id] || 0) + '</td>'
@@ -2740,11 +2974,11 @@ function renderIncomePage() {
 
 function updateIncomeCharts(chartRows, trendRows) {
   if (typeof Chart === 'undefined') return;
-  const typeOrder = ['Active', 'Side Business', 'Passive'];
+  const typeOrder = INCOME_TYPE_ORDER.slice();
   const typeMap = {};
   typeOrder.forEach(function (k) { typeMap[k] = 0; });
   chartRows.forEach(function (i) {
-    const t = i.type || 'Active';
+    const t = normalizeIncomeType(i.type);
     typeMap[t] = (typeMap[t] || 0) + Number(i.amount || 0);
   });
   const labels = typeOrder.filter(function (k) { return typeMap[k] > 0; });
@@ -2815,16 +3049,26 @@ const SPEND_MOODS = {
 };
 
 const SPEND_CAT_META = {
-  Food: { label: 'Food & Groceries', icon: 'utensils', color: '#A8B58A' },
-  Rent: { label: 'Rent', icon: 'home', color: '#F7C8D3' },
-  Shopping: { label: 'Shopping', icon: 'shopping-bag', color: '#e8a05c' },
-  Bills: { label: 'Bills', icon: 'wifi', color: '#A9B7C6' },
+  Food: { label: 'Food', icon: 'utensils', color: '#A8B58A' },
   Transportation: { label: 'Transportation', icon: 'bus', color: '#7f9bb8' },
+  'Bills & Utilities': { label: 'Bills & Utilities', icon: 'wifi', color: '#A9B7C6' },
+  Healthcare: { label: 'Healthcare', icon: 'heart-pulse', color: '#8a9a78' },
   Education: { label: 'Education', icon: 'book-open', color: '#B46A72' },
+  Shopping: { label: 'Shopping', icon: 'shopping-bag', color: '#e8a05c' },
   Entertainment: { label: 'Entertainment', icon: 'film', color: '#c48a9a' },
-  Health: { label: 'Health', icon: 'heart-pulse', color: '#8a9a78' },
-  Other: { label: 'Others', icon: 'circle-dot', color: '#9aa3ad' }
+  Gifts: { label: 'Gifts', icon: 'gift', color: '#F7C8D3' },
+  'Debt Payments': { label: 'Debt Payments', icon: 'credit-card', color: '#B46A72' },
+  'Donations & Charity': { label: 'Donations & Charity', icon: 'heart', color: '#A8B58A' },
+  Pets: { label: 'Pets', icon: 'cat', color: '#D4A574' },
+  Emergency: { label: 'Emergency', icon: 'alert-triangle', color: '#e8a05c' },
+  Rent: { label: 'Rent', icon: 'home', color: '#F7C8D3' },
+  'Other Expenses': { label: 'Other Expenses', icon: 'circle-dot', color: '#9aa3ad' }
 };
+const SPEND_CAT_ORDER = [
+  'Food', 'Transportation', 'Bills & Utilities', 'Healthcare', 'Education', 'Shopping',
+  'Entertainment', 'Gifts', 'Debt Payments', 'Donations & Charity', 'Pets', 'Emergency',
+  'Rent', 'Other Expenses'
+];
 
 function monthRangeLabel(year, month) {
   const start = new Date(year, month, 1);
@@ -2962,7 +3206,8 @@ function submitExpenseAlertThreshold(e) {
 }
 
 function spendCategoryIcon(cat) {
-  return (SPEND_CAT_META[cat] || SPEND_CAT_META.Other).icon;
+  const meta = SPEND_CAT_META[normalizeSpendCat(cat)] || SPEND_CAT_META['Other Expenses'];
+  return meta.icon;
 }
 
 function spendMoodMeta(mood) {
@@ -2991,8 +3236,10 @@ function openExpenseModal(editId) {
   if (idEl) idEl.value = item ? String(item.id) : '';
   document.getElementById('expense-modal-desc').value = item ? item.desc : '';
   document.getElementById('expense-modal-amount').value = item ? item.amount : '';
-  document.getElementById('expense-modal-category').value = item ? (item.category || 'Food') : 'Food';
+  document.getElementById('expense-modal-category').value = item ? normalizeSpendCat(item.category || 'Food') : 'Food';
   document.getElementById('expense-modal-needwant').value = item ? (item.needWant || 'Need') : 'Need';
+  const deductEl = document.getElementById('expense-modal-deduct');
+  if (deductEl) deductEl.value = item ? normalizeDeductFrom(item.deductFrom) : 'Income';
   document.getElementById('expense-modal-date').value = item ? (item.date || todayISO()) : todayISO();
   document.getElementById('expense-modal-mood').value = item ? (item.mood || 'Necessary') : 'Happy';
   modal.style.display = 'flex';
@@ -3014,8 +3261,9 @@ function submitExpenseModal(e) {
   const payload = {
     desc: document.getElementById('expense-modal-desc').value.trim(),
     amount: parseFloat(document.getElementById('expense-modal-amount').value),
-    category: document.getElementById('expense-modal-category').value,
+    category: normalizeSpendCat(document.getElementById('expense-modal-category').value),
     needWant: document.getElementById('expense-modal-needwant').value,
+    deductFrom: normalizeDeductFrom((document.getElementById('expense-modal-deduct') || {}).value),
     date: document.getElementById('expense-modal-date').value || todayISO(),
     mood: document.getElementById('expense-modal-mood').value || 'Necessary'
   };
@@ -3126,11 +3374,11 @@ function renderSpendingPage() {
   const body = document.getElementById('spending-table-body');
   if (body) {
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="7" class="text-center text-[var(--ft-muted)] py-6">No expenses in this range</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="text-center text-[var(--ft-muted)] py-6">No expenses in this range</td></tr>';
     } else {
       body.innerHTML = rows.map(function (i) {
-        const cat = i.category || 'Other';
-        const meta = SPEND_CAT_META[cat] || SPEND_CAT_META.Other;
+        const cat = normalizeSpendCat(i.category || 'Other Expenses');
+        const meta = SPEND_CAT_META[cat] || SPEND_CAT_META['Other Expenses'];
         const mood = spendMoodMeta(i.mood);
         const typeClass = i.needWant === 'Want' ? 'is-want' : 'is-need';
         return '<tr>'
@@ -3138,6 +3386,7 @@ function renderSpendingPage() {
           + '<td class="font-bold">' + escapeHtml(i.desc) + '</td>'
           + '<td><span class="spend-cat-cell"><span class="spend-cat-icon"><i data-lucide="' + meta.icon + '"></i></span>'
           + escapeHtml(meta.label) + '</span></td>'
+          + '<td>' + escapeHtml(normalizeDeductFrom(i.deductFrom)) + '</td>'
           + '<td><span class="spend-type-pill ' + typeClass + '">' + escapeHtml(i.needWant || 'Need') + '</span></td>'
           + '<td class="spend-amount-neg">' + peso(i.amount) + '</td>'
           + '<td><span class="spend-mood-badge">' + mood.emoji + ' ' + escapeHtml(i.mood || 'Necessary') + '</span></td>'
@@ -3152,11 +3401,11 @@ function renderSpendingPage() {
   // Category bars
   const catMap = {};
   rows.forEach(function (e) {
-    const c = e.category || 'Other';
+    const c = normalizeSpendCat(e.category || 'Other Expenses');
     catMap[c] = (catMap[c] || 0) + Number(e.amount || 0);
   });
   const catTotal = Object.keys(catMap).reduce(function (a, k) { return a + catMap[k]; }, 0) || 0;
-  const catOrder = ['Food', 'Rent', 'Shopping', 'Bills', 'Transportation', 'Education', 'Entertainment', 'Health', 'Other'];
+  const catOrder = SPEND_CAT_ORDER.slice();
   const catBars = document.getElementById('spend-category-bars');
   if (catBars) {
     const keys = catOrder.filter(function (k) { return catMap[k] > 0; });
@@ -3167,7 +3416,7 @@ function renderSpendingPage() {
       catBars.innerHTML = '<p class="text-xs text-[var(--ft-muted)]">No category data yet.</p>';
     } else {
       catBars.innerHTML = keys.map(function (k) {
-        const meta = SPEND_CAT_META[k] || SPEND_CAT_META.Other;
+        const meta = SPEND_CAT_META[k] || SPEND_CAT_META['Other Expenses'];
         const amt = catMap[k];
         const pct = catTotal > 0 ? Math.round((amt / catTotal) * 100) : 0;
         return '<div class="spend-bar-row"><div class="top"><strong>' + escapeHtml(meta.label) + '</strong>'
@@ -3189,7 +3438,7 @@ function renderSpendingPage() {
       if (!topCat || catMap[k] > catMap[topCat]) topCat = k;
     });
     if (topCat) {
-      const meta = SPEND_CAT_META[topCat] || SPEND_CAT_META.Other;
+      const meta = SPEND_CAT_META[topCat] || SPEND_CAT_META['Other Expenses'];
       const pct = catTotal > 0 ? Math.round((catMap[topCat] / catTotal) * 100) : 0;
       tips.push(meta.label + ' is your highest spending category (' + pct + '%)');
     }
@@ -3367,27 +3616,34 @@ function updateSpendingCharts(rows) {
 const SAV_CAT_COLORS = {
   'Emergency Fund': '#A8B58A',
   'Short-Term': '#F7C8D3',
-  'Medium Savings': '#e8a05c',
+  'Medium-Term': '#e8a05c',
   'Long-Term': '#A9B7C6',
   Education: '#B46A72',
   Travel: '#7f9bb8',
-  Business: '#9aa3ad'
+  Business: '#9aa3ad',
+  Investment: '#D4A574',
+  'Home/Property': '#8a9a78',
+  Retirement: '#6b7599',
+  Other: '#c4b8a8'
 };
 
 const SAV_CAT_ICONS = {
   'Emergency Fund': 'shield',
   'Short-Term': 'zap',
-  'Medium Savings': 'building-2',
+  'Medium-Term': 'building-2',
   'Long-Term': 'landmark',
   Education: 'graduation-cap',
   Travel: 'plane',
-  Business: 'briefcase'
+  Business: 'briefcase',
+  Investment: 'line-chart',
+  'Home/Property': 'home',
+  Retirement: 'clock',
+  Other: 'circle-dot'
 };
 
 function inferSavingsCategory(item) {
-  if (item.category) return item.category;
-  if (item.isEmergency) return 'Emergency Fund';
-  return 'Short-Term';
+  if (item && item.isEmergency) return 'Emergency Fund';
+  return normalizeSavCat(item && item.category); 
 }
 
 function savingsGoalIcon(desc) {
@@ -3499,7 +3755,7 @@ function submitSavingsModal(e) {
   clearSampleFlagIfNeeded();
   const editId = document.getElementById('savings-modal-edit-id').value;
   const mode = (document.getElementById('savings-modal-mode') || {}).value || 'goal';
-  const category = document.getElementById('savings-modal-category').value;
+  const category = normalizeSavCat(document.getElementById('savings-modal-category').value);
   const isEmergency = document.getElementById('savings-modal-emergency').checked || category === 'Emergency Fund';
   const amount = parseFloat(document.getElementById('savings-modal-amount').value);
   let target = parseFloat(document.getElementById('savings-modal-target').value);
@@ -4004,10 +4260,13 @@ function updateSavingsCharts() {
 /* ---------- Investment page ---------- */
 const INV_CAT_META = {
   'Stocks/Funds': { color: '#B46A72', icon: 'line-chart', short: 'Stocks' },
-  'Bonds/Fixed Income': { color: '#A9B7C6', icon: 'landmark', short: 'Bonds' },
   'Business': { color: '#A8B58A', icon: 'store', short: 'Business' },
+  'Bonds/Fixed Income': { color: '#A9B7C6', icon: 'landmark', short: 'Bonds' },
   'Property': { color: '#D4A574', icon: 'home', short: 'Property' },
-  'Cash/Short-Term': { color: '#7f9bb8', icon: 'wallet', short: 'Cash' },
+  'Retirement Investment': { color: '#6b7599', icon: 'clock', short: 'Retirement' },
+  'Mutual Funds / ETFs': { color: '#c48a9a', icon: 'pie-chart', short: 'ETFs' },
+  'Cryptocurrency': { color: '#e8a05c', icon: 'bitcoin', short: 'Crypto' },
+  'Gold / Precious Metals': { color: '#C6A15B', icon: 'gem', short: 'Gold' },
   'Other': { color: '#C4A8B0', icon: 'circle-dot', short: 'Other' }
 };
 
@@ -4478,11 +4737,15 @@ function renderProtectionPage() {
   if (!document.getElementById('view-protection')) return;
 
   const PROT_TYPES = [
-    { key: 'Health', icon: 'heart-pulse', color: '#A8B58A', desc: 'Medical and health coverage' },
-    { key: 'Life', icon: 'heart', color: '#7f9bb8', desc: 'Life insurance for dependents' },
-    { key: 'Property', icon: 'home', color: '#B46A72', desc: 'Home / property protection' },
-    { key: 'Insurance', icon: 'shield', color: '#9b8ec4', desc: 'General insurance policies' },
-    { key: 'Emergency Fund', icon: 'piggy-bank', color: '#D4A574', desc: 'Cash buffer for emergencies' }
+    { key: 'Health Insurance', icon: 'heart-pulse', color: '#A8B58A', desc: 'Medical and health coverage' },
+    { key: 'Life Insurance', icon: 'heart', color: '#7f9bb8', desc: 'Life insurance for dependents' },
+    { key: 'Property Insurance', icon: 'home', color: '#B46A72', desc: 'Home / property protection' },
+    { key: 'Insurance Coverage', icon: 'shield', color: '#9b8ec4', desc: 'General insurance policies' },
+    { key: 'Emergency Protection', icon: 'piggy-bank', color: '#D4A574', desc: 'Cash buffer for emergencies' },
+    { key: 'Personal Accident Insurance', icon: 'bandage', color: '#e8a05c', desc: 'Accident and injury coverage' },
+    { key: 'Family Insurance', icon: 'users', color: '#c48a9a', desc: 'Family and dependents coverage' },
+    { key: 'Disability Insurance', icon: 'person-standing', color: '#6b7599', desc: 'Income protection if disabled' },
+    { key: 'Other Protection', icon: 'umbrella', color: '#9aa3ad', desc: 'Other protection policies' }
   ];
 
   const period = ((document.getElementById('prot-period') || {}).value || 'year');
@@ -4585,7 +4848,7 @@ function renderProtectionPage() {
       const ok = have.has(item.key);
       return '<li class="prot-check-item' + (ok ? ' is-covered' : ' is-missing') + '" onclick="openProtectionModal(null,\'' + item.key + '\')">'
         + '<span class="prot-check-ico" style="background:' + item.color + '22;color:' + item.color + '"><i data-lucide="' + item.icon + '"></i></span>'
-        + '<div><strong>' + escapeHtml(item.key) + (item.key === 'Insurance' ? ' Coverage' : item.key === 'Emergency Fund' ? '' : ' Protection') + '</strong>'
+        + '<div><strong>' + escapeHtml(item.key) + '</strong>'
         + '<span>' + escapeHtml(item.desc) + '</span></div>'
         + '<em class="prot-status-tag ' + (ok ? 'ok' : 'no') + '">' + (ok ? '✔ Covered' : '✖ Not Set') + '</em>'
         + '<i data-lucide="chevron-right" class="prot-chevron"></i></li>';
@@ -4600,7 +4863,7 @@ function renderProtectionPage() {
       tips.push({
         icon: m.icon,
         color: m.color,
-        title: 'Add ' + m.key + (m.key === 'Insurance' ? ' Coverage' : ''),
+        title: 'Add ' + m.key,
         desc: 'Add ' + m.key.toLowerCase() + ' to raise your Protection score.',
         type: m.key
       });
@@ -4609,18 +4872,18 @@ function renderProtectionPage() {
       tips.push({
         icon: 'piggy-bank',
         color: '#D4A574',
-        title: 'Maintain Emergency Fund',
+        title: 'Maintain Emergency Protection',
         desc: 'Grow toward 3–6 months of spending for a stronger buffer.',
-        type: 'Emergency Fund'
+        type: 'Emergency Protection'
       });
     }
-    if (have.has('Life')) {
+    if (have.has('Life Insurance')) {
       tips.push({
         icon: 'shield',
         color: '#7f9bb8',
         title: 'Review Life Insurance',
         desc: 'Confirm coverage still matches your dependents and income.',
-        type: 'Life'
+        type: 'Life Insurance'
       });
     }
     if (!tips.length) {
@@ -4629,7 +4892,7 @@ function renderProtectionPage() {
         color: '#A8B58A',
         title: 'Coverage looks solid',
         desc: 'Review policies annually to stay protected.',
-        type: 'Health'
+        type: 'Health Insurance'
       });
     }
     recs.innerHTML = tips.slice(0, 4).map(function (r) {
@@ -4784,7 +5047,7 @@ function openProtectionModal(editId, presetType) {
   document.getElementById('protection-modal-monthly').value = item && item.monthly ? item.monthly : '';
   document.getElementById('protection-modal-type').value = item
     ? normalizeProtType(item.policyType)
-    : (presetType ? normalizeProtType(presetType) : 'Health');
+    : (presetType ? normalizeProtType(presetType) : 'Health Insurance');
   document.getElementById('protection-modal-date').value = item ? (toDateInputValue(item.date) || todayISO()) : todayISO();
   modal.style.display = 'flex';
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -5415,12 +5678,11 @@ function renderAnalyticsPage() {
   }
 
   const spendSlice = expensesInAnRange(state.expenses, spendRange);
-  const catOrder = ['Food', 'Rent', 'Shopping', 'Bills', 'Transportation', 'Other'];
+  const catOrder = SPEND_CAT_ORDER.slice();
   const catMap = {};
   catOrder.forEach(function (k) { catMap[k] = 0; });
   spendSlice.forEach(function (e) {
-    let c = e.category || 'Other';
-    if (!SPEND_CAT_META[c] || ['Education', 'Entertainment', 'Health'].indexOf(c) >= 0) c = 'Other';
+    const c = normalizeSpendCat(e.category || 'Other Expenses');
     catMap[c] = (catMap[c] || 0) + Number(e.amount || 0);
   });
   const donutTotal = Object.keys(catMap).reduce(function (a, k) { return a + catMap[k]; }, 0);
@@ -5432,7 +5694,7 @@ function renderAnalyticsPage() {
     legend.innerHTML = catOrder.map(function (k) {
       const amt = catMap[k] || 0;
       const pct = donutTotal > 0 ? Math.round((amt / donutTotal) * 100) : 0;
-      const meta = SPEND_CAT_META[k] || SPEND_CAT_META.Other;
+      const meta = SPEND_CAT_META[k] || SPEND_CAT_META['Other Expenses'];
       const label = k === 'Food' ? 'Food' : (k === 'Transportation' ? 'Transportation' : meta.label);
       return '<li' + (amt <= 0 ? ' class="is-empty"' : '') + '>'
         + '<span class="dot" style="background:' + meta.color + '"></span>'
@@ -5448,7 +5710,7 @@ function renderAnalyticsPage() {
       labels: activeDonut.length ? activeDonut : ['No data'],
       datasets: [{
         data: activeDonut.length ? activeDonut.map(function (k) { return catMap[k]; }) : [1],
-        backgroundColor: activeDonut.length ? activeDonut.map(function (k) { return (SPEND_CAT_META[k] || SPEND_CAT_META.Other).color; }) : ['#e5e7eb'],
+        backgroundColor: activeDonut.length ? activeDonut.map(function (k) { return (SPEND_CAT_META[k] || SPEND_CAT_META['Other Expenses']).color; }) : ['#e5e7eb'],
         borderWidth: 0,
         hoverOffset: 6
       }]
@@ -5517,7 +5779,7 @@ function renderAnalyticsPage() {
       if (!topCat || catMap[k] > catMap[topCat]) topCat = k;
     });
     if (topCat && catMap[topCat] > 0) {
-      const meta = SPEND_CAT_META[topCat] || SPEND_CAT_META.Other;
+      const meta = SPEND_CAT_META[topCat] || SPEND_CAT_META['Other Expenses'];
       const pct = donutTotal > 0 ? Math.round((catMap[topCat] / donutTotal) * 100) : 0;
       const label = topCat === 'Food' ? 'Food' : meta.label;
       tips.push({ icon: meta.icon, color: meta.color, text: 'Your highest spending category is ' + label + ' (' + pct + '%).' });
@@ -5542,19 +5804,27 @@ function renderAnalyticsPage() {
   const lastMap = {};
   catOrder.forEach(function (k) { thisMap[k] = 0; lastMap[k] = 0; });
   thisMonthExp.forEach(function (e) {
-    let c = e.category || 'Other';
-    if (!SPEND_CAT_META[c] || ['Education', 'Entertainment', 'Health'].indexOf(c) >= 0) c = 'Other';
+    const c = normalizeSpendCat(e.category || 'Other Expenses');
     thisMap[c] = (thisMap[c] || 0) + Number(e.amount || 0);
   });
   lastMonthExp.forEach(function (e) {
-    let c = e.category || 'Other';
-    if (!SPEND_CAT_META[c] || ['Education', 'Entertainment', 'Health'].indexOf(c) >= 0) c = 'Other';
+    const c = normalizeSpendCat(e.category || 'Other Expenses');
     lastMap[c] = (lastMap[c] || 0) + Number(e.amount || 0);
   });
   const shortCats = catOrder.map(function (k) {
-    if (k === 'Transportation') return 'Transport';
-    if (k === 'Other') return 'Others';
-    return k;
+    const shorts = {
+      Transportation: 'Transport',
+      'Bills & Utilities': 'Bills',
+      Healthcare: 'Health',
+      Education: 'Educ',
+      Shopping: 'Shop',
+      Entertainment: 'Fun',
+      'Debt Payments': 'Debt',
+      'Donations & Charity': 'Charity',
+      Emergency: 'Emerg',
+      'Other Expenses': 'Other'
+    };
+    return shorts[k] || k;
   });
   destroyChart('anCatCompare');
   ensureChart('anCatCompare', 'anCatCompareChart', {
@@ -5882,11 +6152,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.addEventListener('click', function (e) {
-    const badge = document.querySelector('.user-badge');
-    const dropdown = document.getElementById('user-dropdown');
-    if (badge && dropdown && !badge.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.classList.remove('active');
-    }
     const notifWrap = document.querySelector('.header-notif-wrap');
     if (notifWrap && !notifWrap.contains(e.target)) closeNotificationsDropdown();
   });

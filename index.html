@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=19">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
@@ -111,9 +111,18 @@
             <span class="income-field-label"><i data-lucide="tag"></i> Income Type <em>*</em></span>
             <select id="income-modal-type" class="income-field-input" required>
               <option value="">Select income type</option>
-              <option value="Active">Active</option>
-              <option value="Side Business">Side Business</option>
-              <option value="Passive">Passive</option>
+              <option value="Active Income">Active Income</option>
+              <option value="Side Hustle">Side Hustle</option>
+              <option value="Business">Business</option>
+              <option value="Passive Income">Passive Income</option>
+              <option value="Investment Income">Investment Income</option>
+              <option value="Allowance">Allowance</option>
+              <option value="Gifts">Gifts</option>
+              <option value="Rental Income">Rental Income</option>
+              <option value="Online Income">Online Income</option>
+              <option value="Commission &amp; Tips">Commission &amp; Tips</option>
+              <option value="Government Benefits">Government Benefits</option>
+              <option value="Other Income">Other Income</option>
             </select>
           </label>
           <label class="income-field">
@@ -219,13 +228,18 @@
             <select id="expense-modal-category" class="income-field-input" required>
               <option value="Food">Food</option>
               <option value="Transportation">Transportation</option>
-              <option value="Rent">Rent</option>
-              <option value="Bills">Bills</option>
-              <option value="Shopping">Shopping</option>
+              <option value="Bills & Utilities">Bills &amp; Utilities</option>
+              <option value="Healthcare">Healthcare</option>
               <option value="Education">Education</option>
+              <option value="Shopping">Shopping</option>
               <option value="Entertainment">Entertainment</option>
-              <option value="Health">Health</option>
-              <option value="Other">Other</option>
+              <option value="Gifts">Gifts</option>
+              <option value="Debt Payments">Debt Payments</option>
+              <option value="Donations & Charity">Donations &amp; Charity</option>
+              <option value="Pets">Pets</option>
+              <option value="Emergency">Emergency</option>
+              <option value="Rent">Rent</option>
+              <option value="Other Expenses">Other Expenses</option>
             </select>
           </label>
           <label class="income-field">
@@ -246,20 +260,34 @@
             </select>
           </label>
           <label class="income-field">
-            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
-            <input type="date" id="expense-modal-date" required class="income-field-input">
+            <span class="income-field-label"><i data-lucide="wallet"></i> Deduct from <em>*</em></span>
+            <select id="expense-modal-deduct" class="income-field-input" required>
+              <option value="Income">Income</option>
+              <option value="Savings">Savings</option>
+              <option value="Investment">Investment</option>
+              <option value="Business">Business</option>
+              <option value="Emergency Fund">Emergency Fund</option>
+              <option value="Protection">Protection</option>
+              <option value="Other">Other</option>
+            </select>
           </label>
         </div>
 
-        <label class="income-field income-field-full">
-          <span class="income-field-label"><i data-lucide="smile"></i> Mood <em>*</em></span>
-          <select id="expense-modal-mood" class="income-field-input" required>
-            <option value="Happy">😊 Happy</option>
-            <option value="Stressed">😫 Stressed</option>
-            <option value="Treating Myself">😎 Treating Myself</option>
-            <option value="Necessary">😐 Necessary</option>
-          </select>
-        </label>
+        <div class="income-field-grid">
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="calendar"></i> Date <em>*</em></span>
+            <input type="date" id="expense-modal-date" required class="income-field-input">
+          </label>
+          <label class="income-field">
+            <span class="income-field-label"><i data-lucide="smile"></i> Mood <em>*</em></span>
+            <select id="expense-modal-mood" class="income-field-input" required>
+              <option value="Happy">😊 Happy</option>
+              <option value="Stressed">😫 Stressed</option>
+              <option value="Treating Myself">😎 Treating Myself</option>
+              <option value="Necessary">😐 Necessary</option>
+            </select>
+          </label>
+        </div>
 
         <div class="income-modal-tip">
           <div class="income-modal-tip-icon"><i data-lucide="sparkles"></i></div>
@@ -416,13 +444,17 @@
           <label class="income-field">
             <span class="income-field-label"><i data-lucide="tag"></i> Category <em>*</em></span>
             <select id="savings-modal-category" class="income-field-input" required>
-              <option value="Emergency Fund">Emergency Fund</option>
               <option value="Short-Term">Short-Term</option>
-              <option value="Medium Savings">Medium Savings</option>
+              <option value="Medium-Term">Medium-Term</option>
               <option value="Long-Term">Long-Term</option>
+              <option value="Emergency Fund">Emergency</option>
               <option value="Education">Education</option>
               <option value="Travel">Travel</option>
               <option value="Business">Business</option>
+              <option value="Investment">Investment</option>
+              <option value="Home/Property">Home/Property</option>
+              <option value="Retirement">Retirement</option>
+              <option value="Other">Other</option>
             </select>
           </label>
         </div>
@@ -581,12 +613,15 @@
           <label class="income-field">
             <span class="income-field-label"><i data-lucide="tag"></i> Category <em>*</em></span>
             <select id="investment-modal-category" class="income-field-input" required>
-              <option value="Stocks/Funds">Stocks/Funds</option>
-              <option value="Bonds/Fixed Income">Bonds/Fixed Income</option>
-              <option value="Business">Business</option>
+              <option value="Stocks/Funds">Stocks / Funds</option>
+              <option value="Business">Business Investment</option>
+              <option value="Bonds/Fixed Income">Bonds / Fixed Income</option>
               <option value="Property">Property</option>
-              <option value="Cash/Short-Term">Cash/Short-Term</option>
-              <option value="Other">Other</option>
+              <option value="Retirement Investment">Retirement Investment</option>
+              <option value="Mutual Funds / ETFs">Mutual Funds / ETFs</option>
+              <option value="Cryptocurrency">Cryptocurrency</option>
+              <option value="Gold / Precious Metals">Gold / Precious Metals</option>
+              <option value="Other">Other Investment</option>
             </select>
           </label>
           <label class="income-field">
@@ -660,11 +695,15 @@
           <label class="income-field">
             <span class="income-field-label"><i data-lucide="tag"></i> Policy type <em>*</em></span>
             <select id="protection-modal-type" class="income-field-input" required>
-              <option value="Health">Health</option>
-              <option value="Life">Life</option>
-              <option value="Property">Property</option>
-              <option value="Insurance">Insurance</option>
-              <option value="Emergency Fund">Emergency Fund</option>
+              <option value="Health Insurance">Health Insurance</option>
+              <option value="Life Insurance">Life Insurance</option>
+              <option value="Property Insurance">Property Insurance</option>
+              <option value="Insurance Coverage">Insurance Coverage</option>
+              <option value="Emergency Protection">Emergency Protection</option>
+              <option value="Personal Accident Insurance">Personal Accident Insurance</option>
+              <option value="Family Insurance">Family Insurance</option>
+              <option value="Disability Insurance">Disability Insurance</option>
+              <option value="Other Protection">Other Protection</option>
             </select>
           </label>
           <label class="income-field">
@@ -723,7 +762,7 @@
           <label class="remember-me"><input type="checkbox" checked><span>Remember me</span></label>
           <button type="button" class="forgot-password" onclick="openForgotPassword()">Forgot Password?</button>
         </div>
-        <button type="submit" class="submit-btn"><i data-lucide="log-in" class="w-4 h-4"></i> Sign In</button>
+        <button type="submit" id="login-submit-btn" class="submit-btn"><i data-lucide="log-in" class="w-4 h-4"></i> Sign In</button>
       </form>
       <form id="register-form" onsubmit="handleRegisterForm(event)" class="auth-form">
         <div class="input-group"><i data-lucide="user" class="input-icon"></i><input type="text" id="register-firstname" placeholder="First Name" required></div>
@@ -741,7 +780,7 @@
         </div>
         <div id="register-strength" class="password-strength"></div>
         <div id="register-feedback" class="password-feedback"></div>
-        <button type="submit" class="submit-btn"><i data-lucide="user-plus" class="w-4 h-4"></i> Create Account</button>
+        <button type="submit" id="register-submit-btn" class="submit-btn"><i data-lucide="user-plus" class="w-4 h-4"></i> Create Account</button>
       </form>
       <div class="divider-container"><span class="divider-text">Or continue with</span></div>
       <div class="social-buttons">
@@ -850,19 +889,6 @@
             <div id="notifications-list" class="notif-dropdown-list"></div>
           </div>
         </div>
-        <div id="user-section" style="display:none;">
-          <div class="user-badge" onclick="toggleUserDropdown()">
-            <div class="theme-user-avatar w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-sm text-white shrink-0" id="user-avatar">U</div>
-            <span class="user-name" id="user-display-name">User</span>
-            <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--ft-muted)]"></i>
-          </div>
-          <div class="user-dropdown" id="user-dropdown">
-            <button onclick="navigateTo('dashboard'); document.getElementById('user-dropdown').classList.remove('active')"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
-            <button onclick="navigateTo('settings'); document.getElementById('user-dropdown').classList.remove('active')"><i data-lucide="settings" class="w-4 h-4"></i> Settings</button>
-            <div class="divider"></div>
-            <button onclick="handleLogout()" class="text-rose-500"><i data-lucide="log-out" class="w-4 h-4"></i> Sign Out</button>
-          </div>
-        </div>
         <button id="auth-btn-nav" onclick="showLoginModal()" class="theme-btn-primary h-9 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-2 text-white">
           <i data-lucide="log-in" class="w-4 h-4"></i> <span>Sign In</span>
         </button>
@@ -886,12 +912,12 @@
             </div>
 
             <h1 class="landing-title">
-              Master Your Wealth &amp;
-              <span class="landing-title-accent">Track Equipment.</span>
+              Gain Financial Wisdom And
+              <span class="landing-title-accent">Live with Freedom</span>
             </h1>
 
             <p class="landing-desc">
-              Welcome to FinTrack Pro. Sign in to open your dashboard — track income, spending, savings, investments, protection, and goals in one place.
+              Welcome to FinWise! Sign in to open your dashboard — track income, spending, savings, investments, protection, and goals in one place.
             </p>
 
             <div class="landing-actions">
@@ -1450,6 +1476,7 @@
                     <th>Date</th>
                     <th>Description</th>
                     <th>Category</th>
+                    <th>Deduct from</th>
                     <th>Type</th>
                     <th>Amount</th>
                     <th>Mood</th>
@@ -2635,6 +2662,6 @@
     FinTrack Pro &copy; 2026
   </footer>
 
-  <script src="script.js?v=19"></script>
+  <script src="script.js?v=23"></script>
 </body>
 </html>
