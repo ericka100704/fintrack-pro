@@ -1,4 +1,4 @@
-const UPSTREAM = 'https://crudcrud.com/api/dcc16c221e224c5b9ccb81ba43d2f5af/accounts';
+const UPSTREAM = 'https://crudcrud.com/api/06c45b4c02184e9785a67eea36a7d8ad/accounts';
 
 function send(res, status, body, contentType) {
   res.statusCode = status;
@@ -36,7 +36,7 @@ async function fetchUpstream(target, opts) {
   var lastStatus = 502;
   var lastText = JSON.stringify({ error: 'Cloud sync failed' });
   var lastType = 'application/json';
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < 2; i++) {
     try {
       var upstream = await fetch(target, opts);
       var text = await upstream.text();
@@ -52,7 +52,7 @@ async function fetchUpstream(target, opts) {
       lastText = JSON.stringify({ error: 'Cloud sync failed' });
       lastType = 'application/json';
     }
-    await sleep(350 * (i + 1));
+    await sleep(400 * (i + 1));
   }
   return { status: lastStatus, text: lastText, type: lastType };
 }
