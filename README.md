@@ -1,4 +1,4 @@
-# FinTrack Pro — Handover Notes
+# FinWise — Handover Notes
 
 Soft, dashboard-first personal finance hub (PHP ₱). Auth and data live in **localStorage** (`fintrack_users`, `fintrack_current_user`). Stack: Tailwind CDN, Chart.js, Lucide, canvas-confetti.
 

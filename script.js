@@ -1,4 +1,4 @@
-/* FinTrack Pro — soft dashboard-first finance hub (localStorage + cloud accounts) */
+/* FinWise — soft dashboard-first finance hub (localStorage + cloud accounts) */
 
 const FT_CLOUD_UPSTREAM = 'https://crudcrud.com/api/fa23d18258b84dcebc568c2bb99c7c01/accounts';
 
@@ -2419,7 +2419,7 @@ function updateSidebarStats() {
   const act = document.getElementById('sidebar-latest-activity');
   if (act) {
     const latest = [].concat(state.income, state.expenses).sort((a, b) => b.id - a.id)[0];
-    act.textContent = latest ? ('Latest: ' + latest.desc) : 'Welcome to FinTrack Pro';
+    act.textContent = latest ? ('Latest: ' + latest.desc) : 'Welcome to FinWise';
   }
   updateNotificationBadge();
 }
