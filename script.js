@@ -1,6 +1,6 @@
 /* FinWise — soft dashboard-first finance hub (localStorage + cloud accounts) */
 
-const FT_CLOUD_UPSTREAM = 'https://crudcrud.com/api/fa23d18258b84dcebc568c2bb99c7c01/accounts';
+const FT_CLOUD_UPSTREAM = 'https://crudcrud.com/api/dcc16c221e224c5b9ccb81ba43d2f5af/accounts';
 
 function ftCloudBase() {
   if (typeof location !== 'undefined' && /^https?:/.test(location.protocol) && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
@@ -19,6 +19,9 @@ function ftCloudItemUrl(id) {
 
 const ACCOUNT_SYSTEM = {
   _cloudSyncing: null,
+  _cloudPushTimer: null,
+  _lastCloudError: null,
+  _lastPullAt: 0,
   _cloudIds: null,
   getUsers() {
     try { return JSON.parse(localStorage.getItem('fintrack_users')) || {}; }
@@ -74,52 +77,77 @@ const ACCOUNT_SYSTEM = {
       data: user.data || this.emptyData()
     };
   },
+  applyCloudList(list) {
+    const ids = this.getCloudIds();
+    const remote = {};
+    (list || []).forEach((row) => {
+      if (!row) return;
+      const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
+      if (!username) return;
+      if (row._id) ids[username] = row._id;
+      remote[username] = {
+        firstname: row.firstname || '',
+        lastname: row.lastname || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        avatar: row.avatar || '',
+        password: row.password || '',
+        created: row.created || '',
+        updatedAt: row.updatedAt || row.created || '',
+        data: row.data || this.emptyData()
+      };
+    });
+    this.saveCloudIds(ids);
+    const merged = this.mergeUserMaps(this.getUsers(), remote);
+    this.saveUsers(merged);
+    return merged;
+  },
   async fetchCloudAccounts() {
     const res = await fetch(ftCloudBase(), { method: 'GET', headers: { 'Accept': 'application/json' } });
-    if (!res.ok) throw new Error('Cloud lookup failed');
-    const list = await res.json();
+    const text = await res.text();
+    const lower = (text || '').toLowerCase();
+    if (!res.ok || /quota|limit|exceeded|100 request/i.test(lower)) {
+      if (/quota|limit|exceeded|100 request/i.test(lower) || res.status === 400) {
+        this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
+      } else {
+        this._lastCloudError = 'Cloud sync unavailable (' + res.status + ').';
+      }
+      throw new Error(this._lastCloudError);
+    }
+    this._lastCloudError = null;
+    let list;
+    try { list = JSON.parse(text); } catch (e) { list = []; }
     return Array.isArray(list) ? list : [];
+  },
+  async pullCloudAccounts(force) {
+    const now = Date.now();
+    if (!force && this._lastPullAt && (now - this._lastPullAt) < 8000) return;
+    const list = await this.fetchCloudAccounts();
+    this.applyCloudList(list);
+    this._lastPullAt = Date.now();
   },
   async ensureCloudSync(force) {
     if (this._cloudSyncing && !force) return this._cloudSyncing;
     const run = (async () => {
       try {
-        const list = await this.fetchCloudAccounts();
-        const ids = this.getCloudIds();
-        const remote = {};
-        list.forEach((row) => {
-          if (!row) return;
-          const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
-          if (!username) return;
-          ids[username] = row._id;
-          remote[username] = {
-            firstname: row.firstname || '',
-            lastname: row.lastname || '',
-            email: row.email || '',
-            phone: row.phone || '',
-            avatar: row.avatar || '',
-            password: row.password || '',
-            created: row.created || '',
-            updatedAt: row.updatedAt || row.created || '',
-            data: row.data || this.emptyData()
-          };
-        });
-        this.saveCloudIds(ids);
-        const merged = this.mergeUserMaps(this.getUsers(), remote);
-        this.saveUsers(merged);
+        await this.pullCloudAccounts(force);
       } catch (err) {
-        // Keep going so this device can still upload its local accounts.
-      }
-      const users = this.getUsers();
-      const keys = Object.keys(users);
-      for (let i = 0; i < keys.length; i++) {
-        await this.pushUserToCloud(keys[i]);
+        // Local accounts remain usable; _lastCloudError already set when known.
       }
     })();
     this._cloudSyncing = run;
     try { await run; } finally {
       if (this._cloudSyncing === run) this._cloudSyncing = null;
     }
+  },
+  scheduleCloudPush(username) {
+    if (!username) return;
+    if (this._cloudPushTimer) clearTimeout(this._cloudPushTimer);
+    const self = this;
+    this._cloudPushTimer = setTimeout(function () {
+      self._cloudPushTimer = null;
+      self.pushUserToCloud(username);
+    }, 12000);
   },
   async pushUserToCloud(username) {
     const users = this.getUsers();
@@ -135,22 +163,63 @@ const ACCOUNT_SYSTEM = {
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: body
         });
-        if (res.ok) return true;
+        if (res.ok) {
+          this._lastCloudError = null;
+          return true;
+        }
+        try {
+          await fetch(ftCloudItemUrl(existingId), { method: 'DELETE', headers: { 'Accept': 'application/json' } });
+        } catch (delErr) { /* stale id cleanup best-effort */ }
+        delete ids[username];
+        this.saveCloudIds(ids);
       }
       const created = await fetch(ftCloudBase(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: body
       });
-      if (!created.ok) return false;
+      if (!created.ok) {
+        const errText = await created.text().catch(function () { return ''; });
+        if (/quota|limit|exceeded|100 request/i.test(errText) || created.status === 400) {
+          this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
+        } else {
+          this._lastCloudError = 'Could not upload account to cloud (' + created.status + ').';
+        }
+        return false;
+      }
       const saved = await created.json();
       if (saved && saved._id) {
         ids[username] = saved._id;
         this.saveCloudIds(ids);
       }
+      this._lastCloudError = null;
       return true;
     } catch (err) {
+      this._lastCloudError = 'Cloud sync failed. Check your connection and try again.';
       return false;
+    }
+  },
+  async importCloudUserByEmail(email) {
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized) return null;
+    try {
+      const list = await this.fetchCloudAccounts();
+      this._lastPullAt = Date.now();
+      const row = (list || []).find(function (item) {
+        if (!item) return false;
+        const rowEmail = String(item.email || '').toLowerCase();
+        const rowUser = String(item.username || '').toLowerCase();
+        const localPart = normalized.indexOf('@') >= 0 ? normalized.split('@')[0] : normalized;
+        return rowEmail === normalized || rowUser === normalized || rowUser === localPart;
+      });
+      if (!row) return null;
+      const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
+      if (!username) return null;
+      this.applyCloudList([row]);
+      const users = this.getUsers();
+      return { username: username, user: users[username] };
+    } catch (err) {
+      return null;
     }
   },
   getCurrentUser() {
@@ -317,7 +386,7 @@ const ACCOUNT_SYSTEM = {
     users[username].data = data;
     this.touchUser(users[username]);
     this.saveUsers(users);
-    this.pushUserToCloud(username);
+    this.scheduleCloudPush(username);
     return true;
   },
   getSampleData() {
@@ -1427,7 +1496,7 @@ async function handleLoginForm(e) {
     await ACCOUNT_SYSTEM.ensureCloudSync();
     let result = ACCOUNT_SYSTEM.login(email, password);
     if (!result.success && /not found/i.test(result.error || '')) {
-      await ACCOUNT_SYSTEM.ensureCloudSync(true);
+      await ACCOUNT_SYSTEM.importCloudUserByEmail(email);
       result = ACCOUNT_SYSTEM.login(email, password);
     }
     if (result.success) {
@@ -1439,7 +1508,9 @@ async function handleLoginForm(e) {
       updateUserUI();
       navigateTo('dashboard');
       maybeStartTutorial(result.username);
-      ACCOUNT_SYSTEM.pushUserToCloud(result.username);
+      await ACCOUNT_SYSTEM.pushUserToCloud(result.username);
+    } else if (/not found/i.test(result.error || '') && ACCOUNT_SYSTEM._lastCloudError) {
+      showToast(ACCOUNT_SYSTEM._lastCloudError, 'rose');
     } else showToast(result.error, 'rose');
   } finally {
     setAuthBtnLoading(btn, false);
@@ -1474,7 +1545,7 @@ async function handleRegisterForm(e) {
         navigateTo('dashboard');
         maybeStartTutorial(username);
       }
-      ACCOUNT_SYSTEM.pushUserToCloud(username);
+      await ACCOUNT_SYSTEM.pushUserToCloud(username);
     } else showToast(result.error, 'rose');
   } finally {
     setAuthBtnLoading(btn, false);
@@ -6142,12 +6213,12 @@ document.addEventListener('DOMContentLoaded', function () {
     navigateTo('welcome');
   }
 
-  ACCOUNT_SYSTEM.ensureCloudSync().then(function () {
+  ACCOUNT_SYSTEM.ensureCloudSync().then(async function () {
     const synced = ACCOUNT_SYSTEM.getCurrentUser();
     if (synced) {
       loadUserData(synced.username);
       updateUserUI();
-      ACCOUNT_SYSTEM.pushUserToCloud(synced.username);
+      await ACCOUNT_SYSTEM.pushUserToCloud(synced.username);
     }
   });
 

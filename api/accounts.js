@@ -1,4 +1,4 @@
-const UPSTREAM = 'https://crudcrud.com/api/fa23d18258b84dcebc568c2bb99c7c01/accounts';
+const UPSTREAM = 'https://crudcrud.com/api/dcc16c221e224c5b9ccb81ba43d2f5af/accounts';
 
 function send(res, status, body, contentType) {
   res.statusCode = status;
