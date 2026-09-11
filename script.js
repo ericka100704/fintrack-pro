@@ -2,19 +2,75 @@
 
 const FT_CLOUD_UPSTREAM = 'https://crudcrud.com/api/dcc16c221e224c5b9ccb81ba43d2f5af/accounts';
 
-function ftCloudBase() {
-  if (typeof location !== 'undefined' && /^https?:/.test(location.protocol) && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    return location.origin + '/api/accounts';
-  }
-  return FT_CLOUD_UPSTREAM;
+function ftIsHostedHttps() {
+  return typeof location !== 'undefined'
+    && /^https?:/.test(location.protocol)
+    && location.hostname !== 'localhost'
+    && location.hostname !== '127.0.0.1';
 }
 
-function ftCloudItemUrl(id) {
-  var base = ftCloudBase();
+function ftCloudBases() {
+  const bases = [];
+  if (ftIsHostedHttps()) bases.push(location.origin + '/api/accounts');
+  bases.push(FT_CLOUD_UPSTREAM);
+  return bases;
+}
+
+function ftCloudUrlForBase(base, id) {
+  if (!id) return base;
   if (base.indexOf('/api/accounts') >= 0 && base.indexOf('crudcrud.com') < 0) {
     return base + '?id=' + encodeURIComponent(id);
   }
   return base + '/' + encodeURIComponent(id);
+}
+
+function ftSleep(ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+function ftLooksLikeGatewayFail(status, text) {
+  if (status === 502 || status === 503 || status === 504) return true;
+  const t = String(text || '').toLowerCase();
+  return /bad gateway|gateway time|nginx/.test(t);
+}
+
+/** Fetch cloud with proxy + direct fallback and retries (crudcrud is flaky). */
+async function ftCloudRequest(opts) {
+  opts = opts || {};
+  const method = opts.method || 'GET';
+  const id = opts.id || '';
+  const body = opts.body;
+  const bases = ftCloudBases();
+  let lastErr = null;
+  for (let b = 0; b < bases.length; b++) {
+    const url = ftCloudUrlForBase(bases[b], id);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const headers = { Accept: 'application/json' };
+        if (body != null) headers['Content-Type'] = 'application/json';
+        const res = await fetch(url, { method: method, headers: headers, body: body });
+        const text = await res.text();
+        if (ftLooksLikeGatewayFail(res.status, text)) {
+          lastErr = new Error('Cloud sync unavailable (' + res.status + ').');
+          await ftSleep(400 * (attempt + 1));
+          continue;
+        }
+        return { ok: res.ok, status: res.status, text: text, base: bases[b] };
+      } catch (err) {
+        lastErr = err;
+        await ftSleep(400 * (attempt + 1));
+      }
+    }
+  }
+  throw lastErr || new Error('Cloud sync unavailable.');
+}
+
+function ftCloudBase() {
+  return ftCloudBases()[0];
+}
+
+function ftCloudItemUrl(id) {
+  return ftCloudUrlForBase(ftCloudBase(), id);
 }
 
 const ACCOUNT_SYSTEM = {
@@ -103,21 +159,25 @@ const ACCOUNT_SYSTEM = {
     return merged;
   },
   async fetchCloudAccounts() {
-    const res = await fetch(ftCloudBase(), { method: 'GET', headers: { 'Accept': 'application/json' } });
-    const text = await res.text();
-    const lower = (text || '').toLowerCase();
-    if (!res.ok || /quota|limit|exceeded|100 request/i.test(lower)) {
-      if (/quota|limit|exceeded|100 request/i.test(lower) || res.status === 400) {
-        this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
-      } else {
-        this._lastCloudError = 'Cloud sync unavailable (' + res.status + ').';
+    try {
+      const res = await ftCloudRequest({ method: 'GET' });
+      const lower = (res.text || '').toLowerCase();
+      if (!res.ok || /quota|limit|exceeded|100 request/i.test(lower)) {
+        if (/quota|limit|exceeded|100 request/i.test(lower) || res.status === 400) {
+          this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
+        } else {
+          this._lastCloudError = 'Cloud sync unavailable (' + res.status + ').';
+        }
+        throw new Error(this._lastCloudError);
       }
-      throw new Error(this._lastCloudError);
+      this._lastCloudError = null;
+      let list;
+      try { list = JSON.parse(res.text); } catch (e) { list = []; }
+      return Array.isArray(list) ? list : [];
+    } catch (err) {
+      this._lastCloudError = (err && err.message) || 'Cloud sync unavailable.';
+      throw err;
     }
-    this._lastCloudError = null;
-    let list;
-    try { list = JSON.parse(text); } catch (e) { list = []; }
-    return Array.isArray(list) ? list : [];
   },
   async pullCloudAccounts(force) {
     const now = Date.now();
@@ -158,28 +218,17 @@ const ACCOUNT_SYSTEM = {
     const existingId = ids[username];
     try {
       if (existingId) {
-        const res = await fetch(ftCloudItemUrl(existingId), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: body
-        });
+        const res = await ftCloudRequest({ method: 'PUT', id: existingId, body: body });
         if (res.ok) {
           this._lastCloudError = null;
           return true;
         }
-        try {
-          await fetch(ftCloudItemUrl(existingId), { method: 'DELETE', headers: { 'Accept': 'application/json' } });
-        } catch (delErr) { /* stale id cleanup best-effort */ }
         delete ids[username];
         this.saveCloudIds(ids);
       }
-      const created = await fetch(ftCloudBase(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: body
-      });
+      const created = await ftCloudRequest({ method: 'POST', body: body });
       if (!created.ok) {
-        const errText = await created.text().catch(function () { return ''; });
+        const errText = created.text || '';
         if (/quota|limit|exceeded|100 request/i.test(errText) || created.status === 400) {
           this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
         } else {
@@ -187,7 +236,8 @@ const ACCOUNT_SYSTEM = {
         }
         return false;
       }
-      const saved = await created.json();
+      let saved = null;
+      try { saved = JSON.parse(created.text); } catch (e) { saved = null; }
       if (saved && saved._id) {
         ids[username] = saved._id;
         this.saveCloudIds(ids);
@@ -195,7 +245,7 @@ const ACCOUNT_SYSTEM = {
       this._lastCloudError = null;
       return true;
     } catch (err) {
-      this._lastCloudError = 'Cloud sync failed. Check your connection and try again.';
+      this._lastCloudError = (err && err.message) || 'Cloud sync failed. Check your connection and try again.';
       return false;
     }
   },
@@ -1493,9 +1543,12 @@ async function handleLoginForm(e) {
   const password = document.getElementById('login-password').value;
   setAuthBtnLoading(btn, true, 'Signing in...');
   try {
-    await ACCOUNT_SYSTEM.ensureCloudSync();
+    await ACCOUNT_SYSTEM.ensureCloudSync(true);
     let result = ACCOUNT_SYSTEM.login(email, password);
     if (!result.success && /not found/i.test(result.error || '')) {
+      // Retry pull once — crudcrud often returns transient 502s
+      await ftSleep(600);
+      await ACCOUNT_SYSTEM.ensureCloudSync(true);
       await ACCOUNT_SYSTEM.importCloudUserByEmail(email);
       result = ACCOUNT_SYSTEM.login(email, password);
     }
