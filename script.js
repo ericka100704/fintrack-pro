@@ -181,12 +181,27 @@ const ACCOUNT_SYSTEM = {
     }
     return true;
   },
+  financeFingerprint(data) {
+    try {
+      return JSON.stringify({
+        income: (data && data.income) || [],
+        expenses: (data && data.expenses) || [],
+        savings: (data && data.savings) || [],
+        investments: (data && data.investments) || [],
+        protection: (data && data.protection) || [],
+        goals: (data && data.goals) || []
+      });
+    } catch (e) {
+      return '';
+    }
+  },
   shouldPreferRemoteUser(localUser, remoteRow) {
     if (!remoteRow) return false;
     if (!localUser) return true;
     const remoteTs = this.remoteUpdatedAt(remoteRow);
     const localTs = this.userUpdatedAt(localUser);
-    if (remoteTs >= localTs) return true;
+    // Strict newer only — equal timestamps must not re-apply every poll (causes UI flicker)
+    if (remoteTs > localTs) return true;
     // Never keep empty local over cloud data that has finance rows (common laptop wipe bug)
     if (this.accountDataIsEmpty(localUser.data) && !this.accountDataIsEmpty(remoteRow.data)) {
       return true;
@@ -198,6 +213,10 @@ const ACCOUNT_SYSTEM = {
     const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
     if (!username) return false;
     const local = this.getUsers()[username];
+    if (local && this.financeFingerprint(local.data) === this.financeFingerprint(row.data)
+      && this.userUpdatedAt(local) >= this.remoteUpdatedAt(row)) {
+      return false;
+    }
     if (this.shouldPreferRemoteUser(local, row)) {
       this.applyCloudList([row]);
       return true;
@@ -1973,7 +1992,8 @@ function updateUserUI() {
 }
 
 /* ---------- Data load / save ---------- */
-function loadUserData(username) {
+function loadUserData(username, opts) {
+  opts = opts || {};
   let data = ensureMigratedData(ACCOUNT_SYSTEM.getUserData(username));
   state.income = data.income;
   state.expenses = data.expenses;
@@ -1988,7 +2008,12 @@ function loadUserData(username) {
   if (data.settings && data.settings.theme) setTheme(data.settings.theme);
   else setTheme(getStoredTheme());
   syncSampleModeFlag();
-  renderApp();
+  state._silentRender = !!opts.silent;
+  try {
+    renderApp();
+  } finally {
+    state._silentRender = false;
+  }
 }
 
 function saveUserData() {
@@ -2012,26 +2037,37 @@ async function refreshFinanceFromCloud(opts) {
   opts = opts || {};
   const user = ACCOUNT_SYSTEM.getCurrentUser();
   if (!user) return false;
-  const beforeTs = ACCOUNT_SYSTEM.userUpdatedAt(ACCOUNT_SYSTEM.getUsers()[user.username]);
-  const beforeEmpty = ACCOUNT_SYSTEM.accountDataIsEmpty((ACCOUNT_SYSTEM.getUsers()[user.username] || {}).data);
+  const before = ACCOUNT_SYSTEM.getUsers()[user.username];
+  const beforeFp = ACCOUNT_SYSTEM.financeFingerprint(before && before.data);
+  const beforeTs = ACCOUNT_SYSTEM.userUpdatedAt(before);
+  const beforeEmpty = ACCOUNT_SYSTEM.accountDataIsEmpty(before && before.data);
   await ACCOUNT_SYSTEM.syncCurrentUserFromCloud();
   const after = ACCOUNT_SYSTEM.getUsers()[user.username];
+  const afterFp = ACCOUNT_SYSTEM.financeFingerprint(after && after.data);
   const afterTs = ACCOUNT_SYSTEM.userUpdatedAt(after);
-  const afterEmpty = ACCOUNT_SYSTEM.accountDataIsEmpty((after || {}).data);
-  if (after && (afterTs !== beforeTs || (beforeEmpty && !afterEmpty))) {
-    loadUserData(user.username);
+  const afterEmpty = ACCOUNT_SYSTEM.accountDataIsEmpty(after && after.data);
+  const dataChanged = after && (afterFp !== beforeFp || (beforeEmpty && !afterEmpty));
+  if (dataChanged) {
+    loadUserData(user.username, { silent: !opts.toast });
     updateUserUI();
     if (opts.toast) showToast('Synced: ' + (user.email || user.username), 'success');
     return true;
+  }
+  // Timestamp-only drift: keep local UI still (no count animation)
+  if (after && afterTs !== beforeTs && afterFp === beforeFp) {
+    return false;
   }
   // Local may be newer — soft push without clobbering richer remote
   if (ftSupabaseReady()) {
     const result = await ACCOUNT_SYSTEM.pushUserToCloud(user.username, { force: false });
     if (result === 'remote') {
-      loadUserData(user.username);
-      updateUserUI();
-      if (opts.toast) showToast('Synced: ' + (user.email || user.username), 'success');
-      return true;
+      const next = ACCOUNT_SYSTEM.getUsers()[user.username];
+      if (ACCOUNT_SYSTEM.financeFingerprint(next && next.data) !== beforeFp) {
+        loadUserData(user.username, { silent: !opts.toast });
+        updateUserUI();
+        if (opts.toast) showToast('Synced: ' + (user.email || user.username), 'success');
+        return true;
+      }
     }
   }
   return false;
@@ -2065,16 +2101,21 @@ function startLiveCloudSync() {
     _ftLiveSyncBusy = true;
     refreshFinanceFromCloud()
       .then(function () { _ftLiveSyncBusy = false; }, function () { _ftLiveSyncBusy = false; });
-  }, 2000);
+  }, 5000);
 
   if (user.email && FinWiseAccounts.subscribeByEmail) {
     FinWiseAccounts.subscribeByEmail(user.email, function (row) {
       if (!row) return;
+      const beforeFp = ACCOUNT_SYSTEM.financeFingerprint(
+        (ACCOUNT_SYSTEM.getUsers()[(ACCOUNT_SYSTEM.getCurrentUser() || {}).username] || {}).data
+      );
       const applied = ACCOUNT_SYSTEM.applyRemoteRowIfNewer(row);
       if (!applied) return;
       const cur = ACCOUNT_SYSTEM.getCurrentUser();
       if (!cur) return;
-      loadUserData(cur.username);
+      const afterFp = ACCOUNT_SYSTEM.financeFingerprint((ACCOUNT_SYSTEM.getUsers()[cur.username] || {}).data);
+      if (afterFp === beforeFp) return;
+      loadUserData(cur.username, { silent: true });
       updateUserUI();
     }).then(function (channel) {
       _ftRealtimeChannel = channel;
@@ -6505,19 +6546,21 @@ function animateNumber(element, target, prefix, suffix, duration) {
   prefix = prefix == null ? '₱' : prefix;
   suffix = suffix || '';
   duration = duration || 700;
+  const formatted = prefix + Number(target || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
+  // Silent sync / unchanged value — no counting animation
+  if (state._silentRender || element.textContent === formatted) {
+    element.textContent = formatted;
+    return;
+  }
   const start = 0;
   const startTime = performance.now();
-  const isFloat = true;
   function update(currentTime) {
     const progress = Math.min((currentTime - startTime) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 4);
     const current = start + (target - start) * eased;
     element.textContent = prefix + Number(current).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
     if (progress < 1) requestAnimationFrame(update);
-    else element.textContent = prefix + Number(target).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
-  }
-  if (prefix === '' && suffix === '%') {
-    // percent path used rarely — keep generic
+    else element.textContent = formatted;
   }
   requestAnimationFrame(update);
 }
