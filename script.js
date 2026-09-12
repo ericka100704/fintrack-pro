@@ -162,6 +162,56 @@ const ACCOUNT_SYSTEM = {
     });
     return out;
   },
+  remoteUpdatedAt(row) {
+    if (!row) return 0;
+    const t = Date.parse(row.updatedAt || row.updated_at || row.created || 0);
+    return Number.isFinite(t) ? t : 0;
+  },
+  applyRemoteRowIfNewer(row) {
+    if (!row) return false;
+    const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
+    if (!username) return false;
+    const local = this.getUsers()[username];
+    const remoteTs = this.remoteUpdatedAt(row);
+    const localTs = this.userUpdatedAt(local);
+    if (!local || remoteTs >= localTs) {
+      this.applyCloudList([row]);
+      return true;
+    }
+    return false;
+  },
+  async fetchRemoteAccountRow(username) {
+    if (!username) return null;
+    const user = this.getUsers()[username];
+    const email = (user && user.email) || '';
+    if (ftSupabaseReady()) {
+      try {
+        if (email) {
+          const byEmail = await FinWiseAccounts.findByEmail(email);
+          if (byEmail) return byEmail;
+        }
+        return await FinWiseAccounts.findByEmail(username);
+      } catch (err) {
+        this._lastCloudError = String((err && err.message) || 'Supabase sync unavailable.');
+        return null;
+      }
+    }
+    try {
+      const list = await this.fetchCloudAccounts();
+      const normalizedEmail = String(email || '').toLowerCase();
+      const localPart = normalizedEmail.indexOf('@') >= 0 ? normalizedEmail.split('@')[0] : String(username).toLowerCase();
+      return (list || []).find(function (item) {
+        if (!item) return false;
+        const rowEmail = String(item.email || '').toLowerCase();
+        const rowUser = String(item.username || '').toLowerCase();
+        return rowUser === String(username).toLowerCase()
+          || (normalizedEmail && rowEmail === normalizedEmail)
+          || rowUser === localPart;
+      }) || null;
+    } catch (err) {
+      return null;
+    }
+  },
   cloudRecordFromUser(username, user) {
     return {
       username: username,
@@ -277,11 +327,25 @@ const ACCOUNT_SYSTEM = {
     // Debounced push — safe on Supabase; skipped on free crudcrud to save quota.
     if (!ftSupabaseReady()) return;
     clearTimeout(this._cloudPushTimer);
-    this._cloudPushTimer = setTimeout(() => {
-      this.pushUserToCloud(username);
-    }, 1200);
+    const self = this;
+    this._cloudPushTimer = setTimeout(function () {
+      self.pushUserToCloud(username, { force: true });
+    }, 600);
   },
-  async pushUserToCloud(username) {
+  flushCloudPush(username) {
+    if (!username || !ftSupabaseReady()) return;
+    clearTimeout(this._cloudPushTimer);
+    this._cloudPushTimer = null;
+    return this.pushUserToCloud(username, { force: true });
+  },
+  /**
+   * Upload local account to cloud.
+   * opts.force = true → always upload (after local edits).
+   * opts.force = false → if remote is newer, apply remote and skip upload (boot/focus).
+   */
+  async pushUserToCloud(username, opts) {
+    opts = opts || {};
+    const force = !!opts.force;
     const users = this.getUsers();
     const user = users[username];
     if (!user) return false;
@@ -290,8 +354,24 @@ const ACCOUNT_SYSTEM = {
 
     if (ftSupabaseReady()) {
       try {
-        const record = this.cloudRecordFromUser(username, user);
-        const saved = await FinWiseAccounts.upsertAccount(record, existingId);
+        if (!force) {
+          const remote = await this.fetchRemoteAccountRow(username);
+          if (remote) {
+            const remoteTs = this.remoteUpdatedAt(remote);
+            const localTs = this.userUpdatedAt(user);
+            if (remoteTs > localTs) {
+              this.applyCloudList([remote]);
+              this._lastCloudError = null;
+              return 'remote';
+            }
+            if (remote.id || remote._id) {
+              ids[username] = remote.id || remote._id;
+              this.saveCloudIds(ids);
+            }
+          }
+        }
+        const record = this.cloudRecordFromUser(username, this.getUsers()[username] || user);
+        const saved = await FinWiseAccounts.upsertAccount(record, ids[username] || existingId);
         if (saved && (saved.id || saved._id)) {
           ids[username] = saved.id || saved._id;
           this.saveCloudIds(ids);
@@ -355,6 +435,25 @@ const ACCOUNT_SYSTEM = {
       }
     }
     return false;
+  },
+  /** Pull latest cloud copy for the signed-in user and refresh in-memory users map. */
+  async syncCurrentUserFromCloud() {
+    const current = this.getCurrentUser();
+    if (!current) return null;
+    const username = current.username;
+    try {
+      this._lastPullAt = 0;
+      if (ftSupabaseReady()) {
+        const remote = await this.fetchRemoteAccountRow(username);
+        if (remote) this.applyRemoteRowIfNewer(remote);
+        else await this.pullCloudAccounts(true);
+      } else {
+        await this.pullCloudAccounts(true);
+      }
+    } catch (err) {
+      /* keep local */
+    }
+    return this.getUsers()[username] || null;
   },
   async importCloudUserByEmail(email) {
     const normalized = (email || '').trim().toLowerCase();
@@ -479,7 +578,7 @@ const ACCOUNT_SYSTEM = {
     users[found.username].password = this.hashPassword(newPassword);
     this.touchUser(users[found.username]);
     this.saveUsers(users);
-    this.pushUserToCloud(found.username);
+    this.pushUserToCloud(found.username, { force: true });
     return { success: true, username: found.username };
   },
   changePassword(username, currentPassword, newPassword) {
@@ -492,7 +591,7 @@ const ACCOUNT_SYSTEM = {
     user.password = this.hashPassword(newPassword);
     this.touchUser(user);
     this.saveUsers(users);
-    this.pushUserToCloud(username);
+    this.pushUserToCloud(username, { force: true });
     return { success: true };
   },
   updateProfile(username, patch) {
@@ -522,7 +621,7 @@ const ACCOUNT_SYSTEM = {
     }
     this.touchUser(user);
     this.saveUsers(users);
-    this.pushUserToCloud(username);
+    this.pushUserToCloud(username, { force: true });
     return { success: true };
   },
   hashPassword(password) {
@@ -1679,11 +1778,12 @@ async function handleLoginForm(e) {
       const user = ACCOUNT_SYSTEM.getCurrentUser();
       showToast('Welcome back, ' + user.firstname + '!', 'success');
       fireConfetti();
+      // Cloud was pulled above — load that data; do not overwrite newer remote with stale local
       loadUserData(result.username);
       updateUserUI();
       navigateTo('dashboard');
       maybeStartTutorial(result.username);
-      await ACCOUNT_SYSTEM.pushUserToCloud(result.username);
+      await ACCOUNT_SYSTEM.pushUserToCloud(result.username, { force: false });
     } else if (/not found/i.test(result.error || '')) {
       if (ACCOUNT_SYSTEM._lastCloudError) {
         showToast(ACCOUNT_SYSTEM._lastCloudError + ' ' + ftCloudHint(), 'rose');
@@ -1717,10 +1817,10 @@ async function handleRegisterForm(e) {
     const result = ACCOUNT_SYSTEM.register(firstname, lastname, email, password);
     if (result.success) {
       const username = result.username || email.split('@')[0];
-      let uploaded = await ACCOUNT_SYSTEM.pushUserToCloud(username);
+      let uploaded = await ACCOUNT_SYSTEM.pushUserToCloud(username, { force: true });
       if (!uploaded) {
         await ftSleep(800);
-        uploaded = await ACCOUNT_SYSTEM.pushUserToCloud(username);
+        uploaded = await ACCOUNT_SYSTEM.pushUserToCloud(username, { force: true });
       }
       const loginResult = ACCOUNT_SYSTEM.login(email, password);
       closeLoginModal();
@@ -1869,6 +1969,34 @@ function saveUserData() {
     notificationsLog: state.notificationsLog,
     readNotificationKeys: state.readNotificationKeys || []
   });
+}
+
+/** Pull cloud finance data into the open session (phone ↔ laptop). */
+async function refreshFinanceFromCloud(opts) {
+  opts = opts || {};
+  const user = ACCOUNT_SYSTEM.getCurrentUser();
+  if (!user) return false;
+  const beforeTs = ACCOUNT_SYSTEM.userUpdatedAt(ACCOUNT_SYSTEM.getUsers()[user.username]);
+  await ACCOUNT_SYSTEM.syncCurrentUserFromCloud();
+  const after = ACCOUNT_SYSTEM.getUsers()[user.username];
+  const afterTs = ACCOUNT_SYSTEM.userUpdatedAt(after);
+  if (after && afterTs !== beforeTs) {
+    loadUserData(user.username);
+    updateUserUI();
+    if (opts.toast) showToast('Synced latest data from cloud', 'success');
+    return true;
+  }
+  // Local may be newer — soft push without clobbering newer remote
+  if (ftSupabaseReady()) {
+    const result = await ACCOUNT_SYSTEM.pushUserToCloud(user.username, { force: false });
+    if (result === 'remote') {
+      loadUserData(user.username);
+      updateUserUI();
+      if (opts.toast) showToast('Synced latest data from cloud', 'success');
+      return true;
+    }
+  }
+  return false;
 }
 
 function sampleBackupKey(username) {
@@ -6404,16 +6532,33 @@ document.addEventListener('DOMContentLoaded', function () {
     navigateTo('welcome');
   }
 
-  ACCOUNT_SYSTEM.ensureCloudSync().then(async function () {
-    const synced = ACCOUNT_SYSTEM.getCurrentUser();
-    if (synced) {
-      loadUserData(synced.username);
-      updateUserUI();
-      // Upload local-only accounts created while cloud URL was broken
-      if (ftSupabaseReady()) {
-        await ACCOUNT_SYSTEM.pushUserToCloud(synced.username);
-      }
+  refreshFinanceFromCloud().catch(function () { /* ignore */ });
+
+  let _ftFocusSyncTimer = null;
+  function ftScheduleFocusSync() {
+    if (_ftFocusSyncTimer) clearTimeout(_ftFocusSyncTimer);
+    _ftFocusSyncTimer = setTimeout(function () {
+      refreshFinanceFromCloud().catch(function () { /* ignore */ });
+    }, 400);
+  }
+  document.addEventListener('visibilitychange', function () {
+    const user = ACCOUNT_SYSTEM.getCurrentUser();
+    if (!user) return;
+    if (document.visibilityState === 'hidden') {
+      ACCOUNT_SYSTEM.flushCloudPush(user.username);
+    } else if (document.visibilityState === 'visible') {
+      ftScheduleFocusSync();
     }
+  });
+  window.addEventListener('focus', function () {
+    if (ACCOUNT_SYSTEM.getCurrentUser()) ftScheduleFocusSync();
+  });
+  window.addEventListener('online', function () {
+    if (ACCOUNT_SYSTEM.getCurrentUser()) ftScheduleFocusSync();
+  });
+  window.addEventListener('pagehide', function () {
+    const user = ACCOUNT_SYSTEM.getCurrentUser();
+    if (user) ACCOUNT_SYSTEM.flushCloudPush(user.username);
   });
 
   document.addEventListener('click', function (e) {
