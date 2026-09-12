@@ -33,6 +33,19 @@ function ftCloudUrlForBase(base, id) {
   return base + '/' + encodeURIComponent(id);
 }
 
+function ftIsLocalFile() {
+  return typeof location !== 'undefined' && location.protocol === 'file:';
+}
+
+const FT_VERCEL_URL = 'https://fintrack-pro-theta-two.vercel.app';
+
+function ftCloudHint() {
+  if (ftIsLocalFile()) {
+    return 'Open ' + FT_VERCEL_URL + ' on BOTH phone and laptop (not the local HTML file) for same-account login.';
+  }
+  return 'Use the same Vercel link on both devices, hard refresh, then try again.';
+}
+
 function ftSleep(ms) {
   return new Promise(function (resolve) { setTimeout(resolve, ms); });
 }
@@ -242,53 +255,70 @@ const ACCOUNT_SYSTEM = {
     const users = this.getUsers();
     const user = users[username];
     if (!user) return false;
-    const body = JSON.stringify(this.cloudRecordFromUser(username, user));
+    // Slim payload first attempt — large finance blobs can fail free APIs.
+    const fullBody = JSON.stringify(this.cloudRecordFromUser(username, user));
+    const slimUser = Object.assign({}, user, {
+      avatar: '',
+      data: user.data || this.emptyData()
+    });
+    // Keep data but drop huge avatars only (already capped); retry logic below.
     const ids = this.getCloudIds();
     const existingId = ids[username];
-    try {
-      if (existingId) {
-        const res = await ftCloudRequest({ method: 'PUT', id: existingId, body: body });
-        if (res.ok) {
-          this._lastCloudError = null;
-          return true;
+    const bodies = [fullBody];
+    if (fullBody.length > 90000) {
+      slimUser.data = this.emptyData();
+      bodies.push(JSON.stringify(this.cloudRecordFromUser(username, slimUser)));
+    }
+    for (let bi = 0; bi < bodies.length; bi++) {
+      const body = bodies[bi];
+      try {
+        if (existingId) {
+          const res = await ftCloudRequest({ method: 'PUT', id: existingId, body: body });
+          if (res.ok) {
+            this._lastCloudError = null;
+            return true;
+          }
+          delete ids[username];
+          this.saveCloudIds(ids);
         }
-        delete ids[username];
-        this.saveCloudIds(ids);
-      }
-      const created = await ftCloudRequest({ method: 'POST', body: body });
-      if (!created.ok) {
-        const errText = created.text || '';
-        if (ftLooksLikeQuota(created.status, errText)) {
+        const created = await ftCloudRequest({ method: 'POST', body: body });
+        if (!created.ok) {
+          const errText = created.text || '';
+          if (ftLooksLikeQuota(created.status, errText)) {
+            this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
+          } else {
+            this._lastCloudError = 'Could not upload account to cloud (' + created.status + ').';
+          }
+          continue;
+        }
+        let saved = null;
+        try { saved = JSON.parse(created.text); } catch (e) { saved = null; }
+        if (saved && saved._id) {
+          ids[username] = saved._id;
+          this.saveCloudIds(ids);
+        }
+        this._lastCloudError = null;
+        return true;
+      } catch (err) {
+        const msg = String((err && err.message) || '');
+        if (msg.indexOf('QUOTA:') === 0 || /exceeded allowed number of requests|100 request/i.test(msg)) {
           this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
-        } else {
-          this._lastCloudError = 'Could not upload account to cloud (' + created.status + ').';
+          return false;
         }
-        return false;
-      }
-      let saved = null;
-      try { saved = JSON.parse(created.text); } catch (e) { saved = null; }
-      if (saved && saved._id) {
-        ids[username] = saved._id;
-        this.saveCloudIds(ids);
-      }
-      this._lastCloudError = null;
-      return true;
-    } catch (err) {
-      const msg = String((err && err.message) || '');
-      if (msg.indexOf('QUOTA:') === 0 || /exceeded allowed number of requests|100 request/i.test(msg)) {
-        this._lastCloudError = 'Cloud sync quota exceeded. Try again later or contact support.';
-      } else {
         this._lastCloudError = msg || 'Cloud sync failed. Check your connection and try again.';
       }
-      return false;
     }
+    return false;
   },
   async importCloudUserByEmail(email) {
     const normalized = (email || '').trim().toLowerCase();
     if (!normalized) return null;
     try {
+      // Bypass pull throttle for login lookups
+      this._lastPullAt = 0;
       const list = await this.fetchCloudAccounts();
       this._lastPullAt = Date.now();
+      this.applyCloudList(list);
       const row = (list || []).find(function (item) {
         if (!item) return false;
         const rowEmail = String(item.email || '').toLowerCase();
@@ -299,7 +329,6 @@ const ACCOUNT_SYSTEM = {
       if (!row) return null;
       const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
       if (!username) return null;
-      this.applyCloudList([row]);
       const users = this.getUsers();
       return { username: username, user: users[username] };
     } catch (err) {
@@ -1575,11 +1604,17 @@ async function handleLoginForm(e) {
   if (btn && btn.disabled) return;
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
+  if (ftIsLocalFile()) {
+    showToast(ftCloudHint(), 'rose');
+  }
   setAuthBtnLoading(btn, true, 'Signing in...');
   try {
+    // Always pull cloud first so phone-created accounts appear on laptop
     await ACCOUNT_SYSTEM.ensureCloudSync(true);
+    await ACCOUNT_SYSTEM.importCloudUserByEmail(email);
     let result = ACCOUNT_SYSTEM.login(email, password);
     if (!result.success && /not found/i.test(result.error || '')) {
+      await ftSleep(700);
       await ACCOUNT_SYSTEM.importCloudUserByEmail(email);
       result = ACCOUNT_SYSTEM.login(email, password);
     }
@@ -1593,8 +1628,12 @@ async function handleLoginForm(e) {
       navigateTo('dashboard');
       maybeStartTutorial(result.username);
       await ACCOUNT_SYSTEM.pushUserToCloud(result.username);
-    } else if (/not found/i.test(result.error || '') && ACCOUNT_SYSTEM._lastCloudError) {
-      showToast(ACCOUNT_SYSTEM._lastCloudError, 'rose');
+    } else if (/not found/i.test(result.error || '')) {
+      if (ACCOUNT_SYSTEM._lastCloudError) {
+        showToast(ACCOUNT_SYSTEM._lastCloudError + ' ' + ftCloudHint(), 'rose');
+      } else {
+        showToast('User not found. ' + ftCloudHint(), 'rose');
+      }
     } else showToast(result.error, 'rose');
   } finally {
     setAuthBtnLoading(btn, false);
@@ -1613,23 +1652,34 @@ async function handleRegisterForm(e) {
   if (password !== confirm) { showToast('Passwords do not match!', 'rose'); return; }
   const strengthResult = ACCOUNT_SYSTEM.validatePassword(password);
   if (!strengthResult.valid) { showToast(strengthResult.message, 'rose'); return; }
+  if (ftIsLocalFile()) {
+    showToast('Tip: register on ' + FT_VERCEL_URL + ' so the account syncs to other devices.', 'info');
+  }
   setAuthBtnLoading(btn, true, 'Creating account...');
   try {
-    await ACCOUNT_SYSTEM.ensureCloudSync();
+    await ACCOUNT_SYSTEM.ensureCloudSync(true);
     const result = ACCOUNT_SYSTEM.register(firstname, lastname, email, password);
     if (result.success) {
-      closeLoginModal();
-      showToast('Account created! Welcome ' + firstname + '!', 'success');
-      fireConfetti();
       const username = result.username || email.split('@')[0];
+      let uploaded = await ACCOUNT_SYSTEM.pushUserToCloud(username);
+      if (!uploaded) {
+        await ftSleep(800);
+        uploaded = await ACCOUNT_SYSTEM.pushUserToCloud(username);
+      }
       const loginResult = ACCOUNT_SYSTEM.login(email, password);
+      closeLoginModal();
+      if (uploaded) {
+        showToast('Account created & synced! Welcome ' + firstname + '!', 'success');
+      } else {
+        showToast('Account saved on this device only (cloud upload failed). ' + ftCloudHint(), 'rose');
+      }
+      fireConfetti();
       if (loginResult.success) {
         loadUserData(username);
         updateUserUI();
         navigateTo('dashboard');
         maybeStartTutorial(username);
       }
-      await ACCOUNT_SYSTEM.pushUserToCloud(username);
     } else showToast(result.error, 'rose');
   } finally {
     setAuthBtnLoading(btn, false);
