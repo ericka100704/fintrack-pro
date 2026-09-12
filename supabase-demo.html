@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinWise — Supabase CRUD Demo</title>
+  <style>
+    :root {
+      --ink: #2d3a47;
+      --muted: #6b7599;
+      --line: #e5e0d8;
+      --bg: #f7f3ee;
+      --card: #fffdf9;
+      --primary: #b46a72;
+      --primary-dark: #8e3b45;
+      --ok: #6f8458;
+      --danger: #c45c5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(900px 400px at 10% -10%, rgba(247, 200, 211, 0.45), transparent 60%),
+        radial-gradient(700px 360px at 100% 0%, rgba(168, 181, 138, 0.28), transparent 55%),
+        var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 1.25rem;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+    .sub { color: var(--muted); margin: 0 0 1.25rem; font-size: 0.95rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 30px rgba(45, 58, 71, 0.06);
+    }
+    .status {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      padding: 0.25rem 0.7rem;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+    .pill.ok { background: rgba(111, 132, 88, 0.18); color: #3f5230; }
+    .pill.bad { background: rgba(196, 92, 92, 0.16); color: #7a3030; }
+    .pill.info { background: rgba(180, 106, 114, 0.14); color: var(--primary-dark); }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin: 0.65rem 0 0.3rem;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 0.7rem;
+      padding: 0.65rem 0.75rem;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    button {
+      border: none;
+      border-radius: 0.8rem;
+      padding: 0.65rem 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      font: inherit;
+    }
+    .btn-primary { background: linear-gradient(135deg, #7a4f55, #b9868c); color: #fff; }
+    .btn-ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+    .btn-danger { background: rgba(196, 92, 92, 0.12); color: var(--danger); }
+    .btn-ok { background: rgba(111, 132, 88, 0.18); color: #3f5230; }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.65rem 0.4rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .row-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .row-actions button { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
+    .toast {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--primary);
+      border-radius: 0.7rem;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+      max-width: 320px;
+      z-index: 50;
+      display: none;
+    }
+    .toast.show { display: block; }
+    .toast.err { border-left-color: var(--danger); }
+    .toast.ok { border-left-color: var(--ok); }
+    .hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    code {
+      background: rgba(45, 58, 71, 0.06);
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.35rem;
+      font-size: 0.85em;
+    }
+    a { color: var(--primary-dark); }
+    .empty { color: var(--muted); padding: 1rem 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+
+  <div class="wrap">
+    <h1>FinWise × Supabase CRUD</h1>
+    <p class="sub">
+      CDN-only demo — no CLI. Paste your keys in <code>supabase-config.js</code>,
+      create the table (see <code>SUPABASE-SETUP.md</code>), then test below.
+    </p>
+
+    <div class="card status">
+      <span class="pill info">Table: <span id="table-name">finwise_demo</span></span>
+      <span class="pill" id="cfg-pill">Checking config…</span>
+      <button type="button" class="btn-ok" id="btn-refresh">Refresh list</button>
+      <a class="hint" href="index.html">← Back to FinWise</a>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 0.35rem;font-size:1.1rem;">Add / Edit item</h2>
+      <p class="hint" id="form-mode">Mode: Create new row</p>
+      <form id="item-form">
+        <input type="hidden" id="item-id" value="">
+        <label for="item-title">Title *</label>
+        <input id="item-title" required maxlength="80" placeholder="e.g. Grocery run">
+
+        <div class="grid">
+          <div>
+            <label for="item-amount">Amount (₱)</label>
+            <input id="item-amount" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div>
+            <label for="item-category">Category</label>
+            <select id="item-category">
+              <option>Food</option>
+              <option>Transport</option>
+              <option>Bills</option>
+              <option>Savings</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="item-notes">Notes</label>
+        <textarea id="item-notes" maxlength="200" placeholder="Optional notes"></textarea>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary" id="btn-save">Save (Create)</button>
+          <button type="button" class="btn-ghost" id="btn-reset">Clear form</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 0.75rem;font-size:1.1rem;">Records</h2>
+      <div id="list-wrap">
+        <p class="empty">No rows yet — add one above.</p>
+      </div>
+    </div>
+
+    <div class="card hint">
+      <strong>Quick checklist</strong><br>
+      1) Create project on supabase.com<br>
+      2) Create table <code>finwise_demo</code> (see SUPABASE-SETUP.md)<br>
+      3) Enable RLS policies for anon (or disable RLS for local testing only)<br>
+      4) Paste URL + anon key in <code>supabase-config.js</code><br>
+      5) Reload this page
+    </div>
+  </div>
+
+  <!-- Supabase JS SDK (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-crud.js"></script>
+  <script>
+    (function () {
+      var editingId = null;
+      var toastEl = document.getElementById('toast');
+      var toastTimer = null;
+
+      function toast(msg, type) {
+        toastEl.textContent = msg;
+        toastEl.className = 'toast show ' + (type || '');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          toastEl.className = 'toast';
+        }, 3200);
+      }
+
+      function peso(n) {
+        return '₱' + Number(n || 0).toLocaleString('en-PH', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+
+      function setConfigPill() {
+        var pill = document.getElementById('cfg-pill');
+        var table = document.getElementById('table-name');
+        table.textContent = FinWiseSupabase.tableName();
+        if (FinWiseSupabase.isConfigured()) {
+          pill.className = 'pill ok';
+          pill.textContent = 'Config OK — connected settings ready';
+        } else {
+          pill.className = 'pill bad';
+          pill.textContent = 'Paste URL + anon key in supabase-config.js';
+        }
+      }
+
+      function formPayload() {
+        return {
+          title: document.getElementById('item-title').value,
+          amount: document.getElementById('item-amount').value,
+          category: document.getElementById('item-category').value,
+          notes: document.getElementById('item-notes').value
+        };
+      }
+
+      function resetForm() {
+        editingId = null;
+        document.getElementById('item-id').value = '';
+        document.getElementById('item-form').reset();
+        document.getElementById('btn-save').textContent = 'Save (Create)';
+        document.getElementById('form-mode').textContent = 'Mode: Create new row';
+      }
+
+      function fillForm(row) {
+        editingId = row.id;
+        document.getElementById('item-id').value = row.id;
+        document.getElementById('item-title').value = row.title || '';
+        document.getElementById('item-amount').value = row.amount != null ? row.amount : '';
+        document.getElementById('item-category').value = row.category || 'Other';
+        document.getElementById('item-notes').value = row.notes || '';
+        document.getElementById('btn-save').textContent = 'Update row';
+        document.getElementById('form-mode').textContent = 'Mode: Editing id ' + row.id;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      async function refreshList() {
+        var wrap = document.getElementById('list-wrap');
+        if (!FinWiseSupabase.isConfigured()) {
+          wrap.innerHTML = '<p class="empty">Configure supabase-config.js first.</p>';
+          return;
+        }
+        wrap.innerHTML = '<p class="empty">Loading…</p>';
+        try {
+          var rows = await FinWiseSupabase.readItems();
+          if (!rows.length) {
+            wrap.innerHTML = '<p class="empty">No rows yet — add one above.</p>';
+            return;
+          }
+          wrap.innerHTML =
+            '<table><thead><tr>' +
+            '<th>Title</th><th>Amount</th><th>Category</th><th>Notes</th><th></th>' +
+            '</tr></thead><tbody>' +
+            rows.map(function (r) {
+              return '<tr>' +
+                '<td><strong>' + escapeHtml(r.title || '') + '</strong><div class="hint">' + escapeHtml(r.id) + '</div></td>' +
+                '<td>' + peso(r.amount) + '</td>' +
+                '<td>' + escapeHtml(r.category || '') + '</td>' +
+                '<td>' + escapeHtml(r.notes || '') + '</td>' +
+                '<td><div class="row-actions">' +
+                '<button type="button" class="btn-ghost" data-edit="' + escapeHtml(r.id) + '">Edit</button>' +
+                '<button type="button" class="btn-danger" data-del="' + escapeHtml(r.id) + '">Delete</button>' +
+                '</div></td></tr>';
+            }).join('') +
+            '</tbody></table>';
+        } catch (err) {
+          wrap.innerHTML = '<p class="empty">Error: ' + escapeHtml(err.message || err) + '</p>';
+          toast(err.message || 'Failed to load rows', 'err');
+        }
+      }
+
+      document.getElementById('item-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!FinWiseSupabase.isConfigured()) {
+          toast('Paste your Supabase URL and anon key first.', 'err');
+          return;
+        }
+        var btn = document.getElementById('btn-save');
+        btn.disabled = true;
+        try {
+          var payload = formPayload();
+          if (editingId) {
+            await FinWiseSupabase.updateItem(editingId, payload);
+            toast('Updated successfully', 'ok');
+          } else {
+            await FinWiseSupabase.createItem(payload);
+            toast('Created successfully', 'ok');
+          }
+          resetForm();
+          await refreshList();
+        } catch (err) {
+          toast(err.message || String(err), 'err');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('btn-reset').addEventListener('click', resetForm);
+      document.getElementById('btn-refresh').addEventListener('click', refreshList);
+
+      document.getElementById('list-wrap').addEventListener('click', async function (e) {
+        var editBtn = e.target.closest('[data-edit]');
+        var delBtn = e.target.closest('[data-del]');
+        var editId = editBtn && editBtn.getAttribute('data-edit');
+        var delId = delBtn && delBtn.getAttribute('data-del');
+        if (editId) {
+          try {
+            var row = await FinWiseSupabase.readItemById(editId);
+            fillForm(row);
+          } catch (err) {
+            toast(err.message || String(err), 'err');
+          }
+        }
+        if (delId) {
+          if (!confirm('Delete this row?')) return;
+          try {
+            await FinWiseSupabase.deleteItem(delId);
+            toast('Deleted', 'ok');
+            if (String(editingId) === String(delId)) resetForm();
+            await refreshList();
+          } catch (err) {
+            toast(err.message || String(err), 'err');
+          }
+        }
+      });
+
+      setConfigPill();
+      if (typeof FinWiseSupabase !== 'undefined') {
+        refreshList();
+      } else {
+        document.getElementById('cfg-pill').className = 'pill bad';
+        document.getElementById('cfg-pill').textContent = 'CRUD script failed to load';
+      }
+    })();
+  </script>
+</body>
+</html>

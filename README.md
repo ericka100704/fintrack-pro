@@ -2,6 +2,10 @@
 
 Soft, dashboard-first personal finance hub (PHP ₱). Auth and data live in **localStorage** (`fintrack_users`, `fintrack_current_user`). Stack: Tailwind CDN, Chart.js, Lucide, canvas-confetti.
 
+## Supabase (CDN setup)
+
+See **[SUPABASE-SETUP.md](./SUPABASE-SETUP.md)** for dashboard table steps, then open **`supabase-demo.html`** to test Create / Read / Update / Delete (no CLI).
+
 ## Important behaviors
 
 - **Forgot Password** is **client-side only**. Looking up an email and setting a new password updates `localStorage` — **no email is sent** and there is no backend mailer.
