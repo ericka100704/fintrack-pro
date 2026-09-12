@@ -39,7 +39,20 @@ function ftIsLocalFile() {
 
 const FT_VERCEL_URL = 'https://fintrack-pro-theta-two.vercel.app';
 
+function ftSupabaseReady() {
+  return !!(typeof FinWiseAccounts !== 'undefined'
+    && FinWiseAccounts
+    && typeof FinWiseAccounts.isConfigured === 'function'
+    && FinWiseAccounts.isConfigured());
+}
+
 function ftCloudHint() {
+  if (ftSupabaseReady()) {
+    if (ftIsLocalFile()) {
+      return 'Open ' + FT_VERCEL_URL + ' (or XAMPP http://) — file:// can block cloud login.';
+    }
+    return 'Hard refresh both devices, then Sign In with the same email + password.';
+  }
   if (ftIsLocalFile()) {
     return 'Open ' + FT_VERCEL_URL + ' on BOTH phone and laptop (not the local HTML file) for same-account login.';
   }
@@ -170,7 +183,8 @@ const ACCOUNT_SYSTEM = {
       if (!row) return;
       const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
       if (!username) return;
-      if (row._id) ids[username] = row._id;
+      const cloudId = row._id || row.id;
+      if (cloudId) ids[username] = cloudId;
       remote[username] = {
         firstname: row.firstname || '',
         lastname: row.lastname || '',
@@ -179,7 +193,7 @@ const ACCOUNT_SYSTEM = {
         avatar: row.avatar || '',
         password: row.password || '',
         created: row.created || '',
-        updatedAt: row.updatedAt || row.created || '',
+        updatedAt: row.updatedAt || row.updated_at || row.created || '',
         data: row.data || this.emptyData()
       };
     });
@@ -189,6 +203,16 @@ const ACCOUNT_SYSTEM = {
     return merged;
   },
   async fetchCloudAccounts() {
+    if (ftSupabaseReady()) {
+      try {
+        const list = await FinWiseAccounts.listAccounts();
+        this._lastCloudError = null;
+        return Array.isArray(list) ? list : [];
+      } catch (err) {
+        this._lastCloudError = String((err && err.message) || 'Supabase sync unavailable.');
+        throw err;
+      }
+    }
     try {
       const res = await ftCloudRequest({ method: 'GET' });
       if (!res.ok) {
@@ -216,6 +240,7 @@ const ACCOUNT_SYSTEM = {
     try {
       list = await this.fetchCloudAccounts();
     } catch (err) {
+      if (ftSupabaseReady()) throw err;
       // Try legacy endpoint once (read-only) to recover existing accounts.
       try {
         const legacy = await ftCloudRequest({ method: 'GET', bases: [FT_CLOUD_LEGACY] });
@@ -248,22 +273,43 @@ const ACCOUNT_SYSTEM = {
     }
   },
   scheduleCloudPush(username) {
-    // Intentionally no-op for routine saves — free cloud quotas burn too fast.
-    // Accounts are uploaded on login/register only.
+    if (!username) return;
+    // Debounced push — safe on Supabase; skipped on free crudcrud to save quota.
+    if (!ftSupabaseReady()) return;
+    clearTimeout(this._cloudPushTimer);
+    this._cloudPushTimer = setTimeout(() => {
+      this.pushUserToCloud(username);
+    }, 1200);
   },
   async pushUserToCloud(username) {
     const users = this.getUsers();
     const user = users[username];
     if (!user) return false;
+    const ids = this.getCloudIds();
+    const existingId = ids[username];
+
+    if (ftSupabaseReady()) {
+      try {
+        const record = this.cloudRecordFromUser(username, user);
+        const saved = await FinWiseAccounts.upsertAccount(record, existingId);
+        if (saved && (saved.id || saved._id)) {
+          ids[username] = saved.id || saved._id;
+          this.saveCloudIds(ids);
+        }
+        this._lastCloudError = null;
+        return true;
+      } catch (err) {
+        this._lastCloudError = String((err && err.message) || 'Could not upload account to Supabase.');
+        return false;
+      }
+    }
+
     // Slim payload first attempt — large finance blobs can fail free APIs.
     const fullBody = JSON.stringify(this.cloudRecordFromUser(username, user));
     const slimUser = Object.assign({}, user, {
       avatar: '',
       data: user.data || this.emptyData()
     });
-    // Keep data but drop huge avatars only (already capped); retry logic below.
-    const ids = this.getCloudIds();
-    const existingId = ids[username];
     const bodies = [fullBody];
     if (fullBody.length > 90000) {
       slimUser.data = this.emptyData();
@@ -314,6 +360,15 @@ const ACCOUNT_SYSTEM = {
     const normalized = (email || '').trim().toLowerCase();
     if (!normalized) return null;
     try {
+      if (ftSupabaseReady()) {
+        const row = await FinWiseAccounts.findByEmail(normalized);
+        if (!row) return null;
+        this.applyCloudList([row]);
+        const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
+        if (!username) return null;
+        const users = this.getUsers();
+        return { username: username, user: users[username] };
+      }
       // Bypass pull throttle for login lookups
       this._lastPullAt = 0;
       const list = await this.fetchCloudAccounts();
@@ -1559,7 +1614,8 @@ function closeForgotPassword() {
 }
 async function forgotLookupEmail() {
   const email = document.getElementById('forgot-email').value.trim();
-  await ACCOUNT_SYSTEM.ensureCloudSync();
+  await ACCOUNT_SYSTEM.ensureCloudSync(true);
+  await ACCOUNT_SYSTEM.importCloudUserByEmail(email);
   const found = ACCOUNT_SYSTEM.findByEmail(email);
   if (!found) { showToast('No account found for that email.', 'rose'); return; }
   state.forgotUsername = found.username;

@@ -6,15 +6,13 @@ CDN / browser only. No terminal, no npm, no build tools.
 
 | File | Purpose |
 |------|---------|
-| `supabase-config.js` | Paste your **Project URL** + **anon key** here |
-| `supabase-crud.js` | Create / Read / Update / Delete helpers |
-| `supabase-demo.html` | Test UI in the browser |
+| `supabase-config.js` | Paste your **Project URL** + **publishable/anon key** here |
+| `supabase-accounts.js` | Sign In / Sign Up cloud sync (`finwise_accounts`) |
+| `supabase-crud.js` | Demo Create / Read / Update / Delete helpers |
+| `supabase-demo.html` | Demo test UI (not the main login) |
 | `SUPABASE-SETUP.md` | This guide |
 
-Open the demo page:
-
-- Local file: `supabase-demo.html`
-- Or XAMPP: `http://localhost/deploy-main/deploy-main/supabase-demo.html`
+**Main app login:** open `index.html` (or your Vercel URL) — not Bing search for `supabase-demo.html`.
 
 ---
 
@@ -22,52 +20,82 @@ Open the demo page:
 
 1. Go to [https://supabase.com](https://supabase.com) and sign in.
 2. Click **New project**.
-3. Pick organization, name (e.g. `finwise`), set a database password, choose a region.
+3. Pick organization, name (e.g. `FinWise`), set a database password, choose a region.
 4. Wait until the project is ready.
 
 ---
 
-## Step 2 — Copy URL and anon key
+## Step 2 — Copy URL and key
 
-1. In the project sidebar: **Project Settings** (gear) → **API**.
+1. Sidebar → **Project Settings** (gear) → **API**.
 2. Copy:
-   - **Project URL**
-   - **anon public** key  
-3. Open `supabase-config.js` and paste:
+   - **Project URL** (or from General: `https://YOUR_REF.supabase.co`)
+   - **Publishable** key (`sb_publishable_…`) **or** legacy **anon** JWT (`eyJ…`)
+3. Open `supabase-config.js` and paste into `url` and `anonKey`.
 
-```js
-window.SUPABASE_CONFIG = {
-  url: 'https://YOUR_PROJECT_REF.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-  table: 'finwise_demo'
-};
-```
-
-**Do not** paste the `service_role` key into any browser file.
+**Do not** paste Secret / `service_role` keys into browser files.
 
 ---
 
-## Step 3 — Create the table (Table Editor UI)
+## Step 3 — Accounts table (REQUIRED for Sign In)
 
-1. Sidebar → **Table Editor** → **New table**.
-2. Table name: `finwise_demo`
-3. Leave **Enable Row Level Security (RLS)** ON (recommended). We will add policies next.
-4. Add columns:
+This powers FinWise login across phone + laptop.
 
-| Name | Type | Default | Notes |
-|------|------|---------|--------|
-| `id` | `uuid` | `gen_random_uuid()` | Primary key (enable “Is Identity” / PK) |
-| `title` | `text` | — | Required |
-| `amount` | `float8` (or `numeric`) | `0` | Money amount |
-| `category` | `text` | `'Other'` | Category label |
-| `notes` | `text` | `''` | Optional |
-| `created_at` | `timestamptz` | `now()` | Auto timestamp |
+**SQL Editor** → **New query** → paste → **Run**:
 
-5. Click **Save**.
+```sql
+create table if not exists public.finwise_accounts (
+  id uuid primary key default gen_random_uuid(),
+  username text not null unique,
+  firstname text not null default '',
+  lastname text not null default '',
+  email text not null unique,
+  phone text not null default '',
+  avatar text not null default '',
+  password text not null default '',
+  created text not null default '',
+  updated_at timestamptz not null default now(),
+  data jsonb not null default '{}'::jsonb
+);
 
-### Quick SQL alternative (SQL Editor)
+alter table public.finwise_accounts enable row level security;
 
-If you prefer one paste in **SQL Editor** → **New query**:
+create policy "Allow anon select accounts"
+  on public.finwise_accounts for select
+  to anon
+  using (true);
+
+create policy "Allow anon insert accounts"
+  on public.finwise_accounts for insert
+  to anon
+  with check (true);
+
+create policy "Allow anon update accounts"
+  on public.finwise_accounts for update
+  to anon
+  using (true)
+  with check (true);
+
+create policy "Allow anon delete accounts"
+  on public.finwise_accounts for delete
+  to anon
+  using (true);
+```
+
+> School/demo open policies. For production later, lock down with real Auth + per-user RLS.
+
+After this:
+1. Hard refresh FinWise (`Ctrl+F5`)
+2. **Sign Up** once on phone or laptop
+3. **Sign In** on the other device with the same email + password
+
+Check rows in **Table Editor** → `finwise_accounts`.
+
+---
+
+## Step 4 — Optional demo table (`finwise_demo`)
+
+Only for `supabase-demo.html` practice CRUD (separate from login).
 
 ```sql
 create table if not exists public.finwise_demo (
@@ -78,68 +106,38 @@ create table if not exists public.finwise_demo (
   notes text not null default '',
   created_at timestamptz not null default now()
 );
-```
 
----
-
-## Step 4 — Allow browser access (RLS policies)
-
-Because the demo uses the **anon** key from the browser, you need policies (or temporary open access for school testing).
-
-### Option A — Open for learning / local demo (simple)
-
-In **SQL Editor**, run:
-
-```sql
 alter table public.finwise_demo enable row level security;
 
 create policy "Allow anon select"
-  on public.finwise_demo for select
-  to anon
-  using (true);
+  on public.finwise_demo for select to anon using (true);
 
 create policy "Allow anon insert"
-  on public.finwise_demo for insert
-  to anon
-  with check (true);
+  on public.finwise_demo for insert to anon with check (true);
 
 create policy "Allow anon update"
-  on public.finwise_demo for update
-  to anon
-  using (true)
-  with check (true);
+  on public.finwise_demo for update to anon using (true) with check (true);
 
 create policy "Allow anon delete"
-  on public.finwise_demo for delete
-  to anon
-  using (true);
+  on public.finwise_demo for delete to anon using (true);
 ```
 
-### Option B — UI policies
-
-1. Open table `finwise_demo` → **RLS** / **Policies**.
-2. Create policies for `SELECT`, `INSERT`, `UPDATE`, `DELETE` for role **anon** with “true” (or your preferred rules).
-
-> For a real production app later, lock this down (auth users only, per-user rows). For now, Option A is fine for testing CRUD.
+Open: `supabase-demo.html` or `https://YOUR-VERCEL-URL/supabase-demo.html`
 
 ---
 
-## Step 5 — Test CRUD in the browser
+## Troubleshooting
 
-1. Save `supabase-config.js`.
-2. Open `supabase-demo.html`.
-3. You should see a green **Config OK** pill.
-4. Try:
-   - **Create** — fill the form → Save
-   - **Read** — list appears / Refresh list
-   - **Update** — Edit → change fields → Update row
-   - **Delete** — Delete on a row
-
-If you see an RLS / permission error, re-check Step 4.
+| Symptom | Fix |
+|---------|-----|
+| User not found on other device | Run Step 3 SQL; Sign Up again so a row appears in `finwise_accounts` |
+| permission / RLS error | Re-run the policy block for `finwise_accounts` |
+| Invalid API key / JWT | Use Publishable or legacy anon key; fix Project URL typo |
+| Still “quota exceeded” | Hard refresh so `script.js?v=29` loads; confirm Supabase scripts in Network tab |
 
 ---
 
-## CRUD code map
+## CRUD demo code map
 
 | Action | Function in `supabase-crud.js` |
 |--------|--------------------------------|
@@ -148,11 +146,3 @@ If you see an RLS / permission error, re-check Step 4.
 | Read one | `FinWiseSupabase.readItemById(id)` |
 | Update | `FinWiseSupabase.updateItem(id, { ... })` |
 | Delete | `FinWiseSupabase.deleteItem(id)` |
-
----
-
-## Next step (FinWise app)
-
-This demo is separate from the main `index.html` / `script.js` (still on localStorage + crudcrud).
-
-When you are ready to migrate FinWise accounts/data to Supabase, switch to **Agent mode** and ask to wire `script.js` auth + finance tables to these helpers.

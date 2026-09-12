@@ -9,12 +9,15 @@
  * Never put the service_role key here (browser-visible).
  */
 window.SUPABASE_CONFIG = {
-  // Example: https://abcdefghijklmnop.supabase.co
-  url: 'PASTE_YOUR_SUPABASE_URL_HERE',
+  // Project URL (Project Settings → API / General)
+  url: 'https://drmeehlfsqnihdagqonk.supabase.co',
 
-  // Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-  anonKey: 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE',
+  // Publishable or legacy anon key (never service_role / secret)
+  anonKey: 'sb_publishable_SyyfnYCnFRHvy5dtcd_WjQ_7Wf5eh_1',
 
-  /** Demo table name (create this in Table Editor — see SUPABASE-SETUP.md) */
-  table: 'finwise_demo'
+  /** Demo CRUD table (supabase-demo.html) */
+  table: 'finwise_demo',
+
+  /** Login / Sign Up accounts table (index.html) */
+  accountsTable: 'finwise_accounts'
 };
