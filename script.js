@@ -156,7 +156,12 @@ const ACCOUNT_SYSTEM = {
         out[key] = b[key];
         return;
       }
-      if (this.userUpdatedAt(b[key]) >= this.userUpdatedAt(out[key])) {
+      const remoteAsRow = Object.assign({}, b[key], {
+        updatedAt: b[key].updatedAt,
+        updated_at: b[key].updatedAt,
+        data: b[key].data
+      });
+      if (this.shouldPreferRemoteUser(out[key], remoteAsRow)) {
         out[key] = b[key];
       }
     });
@@ -167,14 +172,33 @@ const ACCOUNT_SYSTEM = {
     const t = Date.parse(row.updatedAt || row.updated_at || row.created || 0);
     return Number.isFinite(t) ? t : 0;
   },
+  accountDataIsEmpty(data) {
+    if (!data || typeof data !== 'object') return true;
+    const keys = ['income', 'expenses', 'savings', 'investments', 'protection', 'goals'];
+    for (let i = 0; i < keys.length; i++) {
+      const arr = data[keys[i]];
+      if (Array.isArray(arr) && arr.length > 0) return false;
+    }
+    return true;
+  },
+  shouldPreferRemoteUser(localUser, remoteRow) {
+    if (!remoteRow) return false;
+    if (!localUser) return true;
+    const remoteTs = this.remoteUpdatedAt(remoteRow);
+    const localTs = this.userUpdatedAt(localUser);
+    if (remoteTs >= localTs) return true;
+    // Never keep empty local over cloud data that has finance rows (common laptop wipe bug)
+    if (this.accountDataIsEmpty(localUser.data) && !this.accountDataIsEmpty(remoteRow.data)) {
+      return true;
+    }
+    return false;
+  },
   applyRemoteRowIfNewer(row) {
     if (!row) return false;
     const username = row.username || (row.email ? String(row.email).split('@')[0] : '');
     if (!username) return false;
     const local = this.getUsers()[username];
-    const remoteTs = this.remoteUpdatedAt(row);
-    const localTs = this.userUpdatedAt(local);
-    if (!local || remoteTs >= localTs) {
+    if (this.shouldPreferRemoteUser(local, row)) {
       this.applyCloudList([row]);
       return true;
     }
@@ -354,23 +378,31 @@ const ACCOUNT_SYSTEM = {
 
     if (ftSupabaseReady()) {
       try {
-        if (!force) {
-          const remote = await this.fetchRemoteAccountRow(username);
-          if (remote) {
-            const remoteTs = this.remoteUpdatedAt(remote);
-            const localTs = this.userUpdatedAt(user);
-            if (remoteTs > localTs) {
+        const remote = await this.fetchRemoteAccountRow(username);
+        if (remote) {
+          if (remote.id || remote._id) {
+            ids[username] = remote.id || remote._id;
+            this.saveCloudIds(ids);
+          }
+          const localNow = this.getUsers()[username] || user;
+          if (!force || this.shouldPreferRemoteUser(localNow, remote)) {
+            if (this.shouldPreferRemoteUser(localNow, remote)) {
               this.applyCloudList([remote]);
               this._lastCloudError = null;
               return 'remote';
             }
-            if (remote.id || remote._id) {
-              ids[username] = remote.id || remote._id;
-              this.saveCloudIds(ids);
-            }
           }
+          // Block empty local from wiping richer cloud data
+          if (this.accountDataIsEmpty(localNow.data) && !this.accountDataIsEmpty(remote.data)) {
+            this.applyCloudList([remote]);
+            this._lastCloudError = null;
+            return 'remote';
+          }
+        } else if (!force) {
+          /* no remote row yet — fall through to create */
         }
-        const record = this.cloudRecordFromUser(username, this.getUsers()[username] || user);
+        const latest = this.getUsers()[username] || user;
+        const record = this.cloudRecordFromUser(username, latest);
         const saved = await FinWiseAccounts.upsertAccount(record, ids[username] || existingId);
         if (saved && (saved.id || saved._id)) {
           ids[username] = saved.id || saved._id;
@@ -1977,22 +2009,24 @@ async function refreshFinanceFromCloud(opts) {
   const user = ACCOUNT_SYSTEM.getCurrentUser();
   if (!user) return false;
   const beforeTs = ACCOUNT_SYSTEM.userUpdatedAt(ACCOUNT_SYSTEM.getUsers()[user.username]);
+  const beforeEmpty = ACCOUNT_SYSTEM.accountDataIsEmpty((ACCOUNT_SYSTEM.getUsers()[user.username] || {}).data);
   await ACCOUNT_SYSTEM.syncCurrentUserFromCloud();
   const after = ACCOUNT_SYSTEM.getUsers()[user.username];
   const afterTs = ACCOUNT_SYSTEM.userUpdatedAt(after);
-  if (after && afterTs !== beforeTs) {
+  const afterEmpty = ACCOUNT_SYSTEM.accountDataIsEmpty((after || {}).data);
+  if (after && (afterTs !== beforeTs || (beforeEmpty && !afterEmpty))) {
     loadUserData(user.username);
     updateUserUI();
-    if (opts.toast) showToast('Synced latest data from cloud', 'success');
+    if (opts.toast) showToast('Synced: ' + (user.email || user.username), 'success');
     return true;
   }
-  // Local may be newer — soft push without clobbering newer remote
+  // Local may be newer — soft push without clobbering richer remote
   if (ftSupabaseReady()) {
     const result = await ACCOUNT_SYSTEM.pushUserToCloud(user.username, { force: false });
     if (result === 'remote') {
       loadUserData(user.username);
       updateUserUI();
-      if (opts.toast) showToast('Synced latest data from cloud', 'success');
+      if (opts.toast) showToast('Synced: ' + (user.email || user.username), 'success');
       return true;
     }
   }
@@ -6532,7 +6566,7 @@ document.addEventListener('DOMContentLoaded', function () {
     navigateTo('welcome');
   }
 
-  refreshFinanceFromCloud().catch(function () { /* ignore */ });
+  refreshFinanceFromCloud({ toast: true }).catch(function () { /* ignore */ });
 
   let _ftFocusSyncTimer = null;
   function ftScheduleFocusSync() {
