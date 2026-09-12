@@ -135,10 +135,45 @@
     return toCloudRow(inserted.data);
   }
 
+  /** Realtime: call onRow(cloudRow) when this email's account row changes */
+  function subscribeByEmail(email, onRow) {
+    var normalized = String(email || '').trim().toLowerCase();
+    if (!normalized) return Promise.reject(new Error('Email required'));
+    var db = getClient();
+    var channel = db
+      .channel('finwise-acct-' + normalized.replace(/[^a-z0-9]/g, ''))
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: tableName(),
+          filter: 'email=eq.' + normalized
+        },
+        function (payload) {
+          var row = payload && (payload.new || payload.old);
+          if (row && typeof onRow === 'function') onRow(toCloudRow(row));
+        }
+      )
+      .subscribe();
+    return Promise.resolve(channel);
+  }
+
+  function unsubscribe(channel) {
+    if (!channel) return Promise.resolve();
+    try {
+      return getClient().removeChannel(channel);
+    } catch (err) {
+      return Promise.resolve();
+    }
+  }
+
   global.FinWiseAccounts = {
     isConfigured: isConfigured,
     listAccounts: listAccounts,
     findByEmail: findByEmail,
-    upsertAccount: upsertAccount
+    upsertAccount: upsertAccount,
+    subscribeByEmail: subscribeByEmail,
+    unsubscribe: unsubscribe
   };
 })(typeof window !== 'undefined' ? window : this);

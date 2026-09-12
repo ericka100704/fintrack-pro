@@ -348,16 +348,16 @@ const ACCOUNT_SYSTEM = {
   },
   scheduleCloudPush(username) {
     if (!username) return;
-    // Debounced push — safe on Supabase; skipped on free crudcrud to save quota.
     if (!ftSupabaseReady()) return;
     clearTimeout(this._cloudPushTimer);
     const self = this;
+    // Near-instant upload so the other device can poll/realtime within ~1–2s
     this._cloudPushTimer = setTimeout(function () {
       self.pushUserToCloud(username, { force: true });
-    }, 600);
+    }, 120);
   },
   flushCloudPush(username) {
-    if (!username || !ftSupabaseReady()) return;
+    if (!username || !ftSupabaseReady()) return Promise.resolve(false);
     clearTimeout(this._cloudPushTimer);
     this._cloudPushTimer = null;
     return this.pushUserToCloud(username, { force: true });
@@ -685,7 +685,8 @@ const ACCOUNT_SYSTEM = {
     users[username].data = data;
     this.touchUser(users[username]);
     this.saveUsers(users);
-    this.scheduleCloudPush(username);
+    // Upload immediately so the other device can pick it up in seconds
+    this.flushCloudPush(username);
     return true;
   },
   getSampleData() {
@@ -1816,6 +1817,7 @@ async function handleLoginForm(e) {
       navigateTo('dashboard');
       maybeStartTutorial(result.username);
       await ACCOUNT_SYSTEM.pushUserToCloud(result.username, { force: false });
+      startLiveCloudSync();
     } else if (/not found/i.test(result.error || '')) {
       if (ACCOUNT_SYSTEM._lastCloudError) {
         showToast(ACCOUNT_SYSTEM._lastCloudError + ' ' + ftCloudHint(), 'rose');
@@ -1868,6 +1870,7 @@ async function handleRegisterForm(e) {
         updateUserUI();
         navigateTo('dashboard');
         maybeStartTutorial(username);
+        startLiveCloudSync();
       }
     } else showToast(result.error, 'rose');
   } finally {
@@ -1897,6 +1900,7 @@ function closeConfirmModal(confirmed) {
 
 function handleLogout() {
   showConfirmModal('Sign Out', 'Are you sure you want to sign out?', function () {
+    stopLiveCloudSync();
     ACCOUNT_SYSTEM.logout();
     const authBtn = document.getElementById('auth-btn-nav');
     if (authBtn) authBtn.style.display = 'flex';
@@ -2031,6 +2035,51 @@ async function refreshFinanceFromCloud(opts) {
     }
   }
   return false;
+}
+
+let _ftLiveSyncTimer = null;
+let _ftRealtimeChannel = null;
+let _ftLiveSyncBusy = false;
+
+function stopLiveCloudSync() {
+  if (_ftLiveSyncTimer) {
+    clearInterval(_ftLiveSyncTimer);
+    _ftLiveSyncTimer = null;
+  }
+  if (_ftRealtimeChannel && typeof FinWiseAccounts !== 'undefined' && FinWiseAccounts.unsubscribe) {
+    FinWiseAccounts.unsubscribe(_ftRealtimeChannel);
+  }
+  _ftRealtimeChannel = null;
+}
+
+function startLiveCloudSync() {
+  stopLiveCloudSync();
+  if (!ftSupabaseReady()) return;
+  const user = ACCOUNT_SYSTEM.getCurrentUser();
+  if (!user) return;
+
+  _ftLiveSyncTimer = setInterval(function () {
+    if (document.visibilityState === 'hidden') return;
+    if (_ftLiveSyncBusy) return;
+    if (!ACCOUNT_SYSTEM.getCurrentUser()) return;
+    _ftLiveSyncBusy = true;
+    refreshFinanceFromCloud()
+      .then(function () { _ftLiveSyncBusy = false; }, function () { _ftLiveSyncBusy = false; });
+  }, 2000);
+
+  if (user.email && FinWiseAccounts.subscribeByEmail) {
+    FinWiseAccounts.subscribeByEmail(user.email, function (row) {
+      if (!row) return;
+      const applied = ACCOUNT_SYSTEM.applyRemoteRowIfNewer(row);
+      if (!applied) return;
+      const cur = ACCOUNT_SYSTEM.getCurrentUser();
+      if (!cur) return;
+      loadUserData(cur.username);
+      updateUserUI();
+    }).then(function (channel) {
+      _ftRealtimeChannel = channel;
+    }).catch(function () { /* polling still runs */ });
+  }
 }
 
 function sampleBackupKey(username) {
@@ -6566,7 +6615,11 @@ document.addEventListener('DOMContentLoaded', function () {
     navigateTo('welcome');
   }
 
-  refreshFinanceFromCloud({ toast: true }).catch(function () { /* ignore */ });
+  refreshFinanceFromCloud({ toast: true }).then(function () {
+    startLiveCloudSync();
+  }, function () {
+    startLiveCloudSync();
+  });
 
   let _ftFocusSyncTimer = null;
   function ftScheduleFocusSync() {
