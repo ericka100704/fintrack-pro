@@ -1727,7 +1727,8 @@ async function handleRegisterForm(e) {
       if (uploaded) {
         showToast('Account created & synced! Welcome ' + firstname + '!', 'success');
       } else {
-        showToast('Account saved on this device only (cloud upload failed). ' + ftCloudHint(), 'rose');
+        const why = ACCOUNT_SYSTEM._lastCloudError ? (' ' + ACCOUNT_SYSTEM._lastCloudError) : '';
+        showToast('Account saved on this device only (cloud upload failed).' + why + ' ' + ftCloudHint(), 'rose');
       }
       fireConfetti();
       if (loginResult.success) {
@@ -6408,6 +6409,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (synced) {
       loadUserData(synced.username);
       updateUserUI();
+      // Upload local-only accounts created while cloud URL was broken
+      if (ftSupabaseReady()) {
+        await ACCOUNT_SYSTEM.pushUserToCloud(synced.username);
+      }
     }
   });
 

@@ -9,8 +9,8 @@
  * Never put the service_role key here (browser-visible).
  */
 window.SUPABASE_CONFIG = {
-  // Project URL (Project Settings → API / General)
-  url: 'https://drmeehlfsqnihdagqonk.supabase.co',
+  // API host that resolves (project hostname for this FinWise DB)
+  url: 'https://drmeehlfsgnihdagqonk.supabase.co',
 
   // Publishable or legacy anon key (never service_role / secret)
   anonKey: 'sb_publishable_SyyfnYCnFRHvy5dtcd_WjQ_7Wf5eh_1',
