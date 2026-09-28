@@ -40,7 +40,7 @@
   --theme-shell-border: rgba(230, 210, 205, 0.85);
 }
 
-/* Theme packs: accents + full-app surfaces */
+
 [data-theme="soft"] {
   --theme-primary: #B46A72;
   --theme-primary-light: #F7C8D3;
@@ -233,7 +233,7 @@
   transition: background 0.35s ease;
 }
 
-/* Hide visible scrollbars (scroll still works when unlocked) */
+
 html {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -372,7 +372,7 @@ body.modal-open {
   outline-offset: 3px;
 }
 
-/* Soft pastel metric cards (reference UI) */
+
 .dash-metric-card {
   display: flex;
   align-items: flex-start;
@@ -461,7 +461,7 @@ body.modal-open {
 .dash-metric-trend.is-up { color: var(--ft-sage-deep); }
 .dash-metric-trend.is-down { color: var(--ft-rosewood); }
 
-/* Exact client palette on metric cards */
+
 .dash-metric-card.is-income {
   background: linear-gradient(160deg, var(--ft-cream) 0%, #e4ebcf 100%);
   border-color: rgba(168, 181, 138, 0.5);
@@ -518,7 +518,7 @@ body.modal-open {
 .dash-metric-card.is-protection .dash-metric-label { color: var(--theme-primary); }
 .dash-metric-card.is-protection .dash-metric-value { color: var(--ft-lagoon); }
 
-/* Dashboard chart / content cards — strong lift too */
+
 #view-dashboard .ft-card:not(.dash-nav-card):hover {
   transform: translateY(-8px) scale(1.02);
   border-color: rgba(185, 134, 140, 0.6);
@@ -620,7 +620,7 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-/* ---- Top Goals empty + quick actions ---- */
+
 .dash-goals-card {
   display: flex;
   flex-direction: column;
@@ -802,7 +802,7 @@ body.modal-open {
   }
   .dash-qa-label { font-size: 0.52rem; }
 }
-/* ---- Dashboard layout: main + right sidebar (calendar + financial health) ---- */
+
 .dash-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -1028,7 +1028,7 @@ body.modal-open {
   box-shadow: 0 16px 40px rgba(61, 77, 87, 0.08);
 }
 
-/* ---------- Landing page (client palette, larger) ---------- */
+
 body.on-landing {
   background: #F7F1E0;
 }
@@ -1110,7 +1110,7 @@ body.on-landing.sidebar-open {
   padding: 2.75rem 1.75rem 3rem;
   box-shadow: 0 20px 50px rgba(61, 77, 87, 0.08);
   animation: landIn 0.65s ease both;
-  /* Fill first viewport so "How it Works" stays below the fold */
+
   min-height: calc(100dvh - 5.75rem);
   display: flex;
   align-items: center;
@@ -1359,7 +1359,7 @@ body.on-landing.sidebar-open {
   font-weight: 500;
 }
 
-/* Dark mode — app + landing */
+
 body[data-mode="dark"] {
   color-scheme: dark;
 }
@@ -1778,7 +1778,7 @@ body[data-mode="dark"] .landing-how.is-visible .landing-how-card:nth-child(3):ho
 #sidebar-overlay.hidden { display: none !important; }
 body.sidebar-open { overflow: hidden; }
 
-/* Desktop: icon-rail by default; expand on CSS :hover only */
+
 @media (min-width: 1024px) {
   body:not(.on-landing) #sidebar {
     transform: translateX(0) !important;
@@ -1810,7 +1810,7 @@ body.sidebar-open { overflow: hidden; }
     transform: translateX(-100%) !important;
   }
 
-  /* Collapsed rail: labels gone, equal icon tiles, hard clip */
+
   body:not(.on-landing) #sidebar:not(:hover) .sidebar-label,
   body:not(.on-landing) #sidebar:not(:hover) .sidebar-stats,
   body:not(.on-landing) #sidebar:not(:hover) .sidebar-quote,
@@ -1898,7 +1898,7 @@ body.sidebar-open { overflow: hidden; }
     overflow: hidden;
   }
 
-  /* Expand only while pointer is on the sidebar */
+
   body:not(.on-landing):has(#sidebar:hover) {
     padding-left: 18rem;
   }
@@ -2006,7 +2006,7 @@ body.sidebar-open { overflow: hidden; }
   }
 }
 
-/* Short laptop screens — keep expanded nav reachable but still spaced */
+
 @media (min-width: 1024px) and (max-height: 820px) {
   body:not(.on-landing) #sidebar:hover .sidebar-nav {
     gap: 0.28rem !important;
@@ -2298,7 +2298,7 @@ body[data-mode="dark"] .notif-count {
   box-shadow: 0 0 0 2px #2d3a42;
 }
 
-/* Seasonal accents (subtle — layered on active theme) */
+
 body.season-christmas {
   --theme-primary: #9f1239;
   --theme-primary-light: #fecaca;
@@ -2480,7 +2480,7 @@ body.season-halloween::before {
     radial-gradient(circle at 50% 100%, rgba(88, 28, 135, 0.2), transparent 35%);
 }
 
-/* Light accent tint on primary actions while season is active */
+
 body[class*="season-"] .theme-btn-primary,
 body[class*="season-"] .theme-icon-bg {
   background: linear-gradient(135deg, var(--season-accent), var(--theme-primary)) !important;
@@ -2530,7 +2530,7 @@ body.season-valentines .seasonal-badge {
   letter-spacing: 0.03em;
 }
 
-/* Simple header decor dots */
+
 .ft-header.season-decor::after {
   content: '';
   position: absolute;
@@ -2575,7 +2575,7 @@ body.season-halloween .dash-hero-banner-deco {
   display: none;
 }
 
-/* ===== Valentine Edition skin ===== */
+
 .vday-only[hidden] { display: none !important; }
 .dash-welcome-actions {
   display: flex;
@@ -2846,7 +2846,7 @@ body.season-valentines .mini-cal-day.has-event:not(.is-vday):not(.today) {
   box-shadow: inset 0 0 0 1.5px rgba(251, 113, 133, 0.45);
 }
 
-/* Valentine heart day — fits INSIDE the cell (no spill onto the date below) */
+
 .mini-cal-day.is-vday {
   background: transparent !important;
   box-shadow: none !important;
@@ -2924,7 +2924,7 @@ body.season-valentines.ft-body {
   color: var(--ft-ink);
 }
 
-/* ===== Valentine site-wide (every page, not just dashboard) ===== */
+
 body.season-valentines .ft-sidebar {
   background: var(--theme-sidebar-bg) !important;
   border-color: var(--theme-shell-border) !important;
@@ -2950,7 +2950,7 @@ body.season-valentines .sidebar-footer {
   border-color: rgba(225, 29, 72, 0.14) !important;
 }
 
-/* Page heroes / banners */
+
 body.season-valentines .income-hero,
 body.season-valentines .income-modal-hero,
 body.season-valentines .calc-hero-banner,
@@ -2985,7 +2985,7 @@ body.season-valentines .calc-hero-illus {
   border-color: rgba(225, 29, 72, 0.22);
 }
 
-/* Primary CTAs across modules */
+
 body.season-valentines .income-add-btn,
 body.season-valentines .spending-add-btn,
 body.season-valentines .savings-add-btn,
@@ -3001,7 +3001,7 @@ body.season-valentines .theme-btn-primary {
   color: #fff !important;
 }
 
-/* Metric / summary chips */
+
 body.season-valentines .spend-metric-total,
 body.season-valentines .dash-metric-card.is-spending {
   background: linear-gradient(145deg, #fff0f4, #ffc1cc) !important;
@@ -3013,7 +3013,7 @@ body.season-valentines .inv-goal-fill {
   background: linear-gradient(90deg, #e11d48, #fb7185) !important;
 }
 
-/* Side / page quotes on every module */
+
 body.season-valentines .spend-quote,
 body.season-valentines .sav-quote,
 body.season-valentines .inv-quote,
@@ -3029,7 +3029,7 @@ body.season-valentines .sidebar-quote {
   box-shadow: 0 8px 18px rgba(225, 29, 72, 0.08);
 }
 
-/* Cards / panels / tables */
+
 body.season-valentines .ft-card,
 body.season-valentines .settings-card,
 body.season-valentines .calc-card,
@@ -3046,7 +3046,7 @@ body.season-valentines .ft-table tr:hover td {
   background: rgba(255, 193, 204, 0.28) !important;
 }
 
-/* Forms */
+
 body.season-valentines input:focus,
 body.season-valentines select:focus,
 body.season-valentines textarea:focus,
@@ -3063,7 +3063,7 @@ body.season-valentines .settings-theme-card.is-active {
   box-shadow: 0 0 0 2px rgba(255, 193, 204, 0.7);
 }
 
-/* Landing + auth surfaces */
+
 body.season-valentines.on-landing,
 body.season-valentines.on-landing .ft-body {
   background: var(--theme-page-bg) !important;
@@ -3073,7 +3073,7 @@ body.season-valentines .theme-text {
   color: #e11d48 !important;
 }
 
-/* Valentine + Dark mode readability */
+
 body.season-valentines[data-mode="dark"] {
   --ft-ink: #F7F1E0;
   --ft-muted: #d4b4bc;
@@ -3138,7 +3138,7 @@ body.season-valentines .notif-item:hover {
   background: rgba(255, 193, 204, 0.35) !important;
 }
 
-/* Soft pink wash on interactive pills */
+
 body.season-valentines .income-type-pill.is-active,
 body.season-valentines .inv-range-btn.active,
 body.season-valentines .an-range-btn.active {
@@ -3147,7 +3147,7 @@ body.season-valentines .an-range-btn.active {
   border-color: #e11d48 !important;
 }
 
-/* Valentine feeling — soft pink dashboard bg everywhere + ribbons/roses/hearts */
+
 body.season-valentines,
 body.season-valentines.ft-body,
 html.season-valentines {
@@ -3155,7 +3155,7 @@ html.season-valentines {
   background-attachment: fixed !important;
 }
 body.season-valentines .ft-sidebar {
-  background: var(--theme-sidebar-bg) !important; /* soft pink like dashboard — not maroon */
+  background: var(--theme-sidebar-bg) !important;
 }
 
 .vday-global-decor {
@@ -3264,7 +3264,7 @@ body.season-valentines .ft-sidebar {
 }
 body:not(.season-valentines) .vday-global-decor { display: none !important; }
 
-/* ===== Christmas Edition (site-wide) ===== */
+
 .xmas-only[hidden] { display: none !important; }
 body.season-christmas,
 body.season-christmas.ft-body,
@@ -3291,7 +3291,7 @@ body.season-christmas .ft-sidebar .theme-text,
 body.season-christmas .ft-sidebar .nav-side-btn i {
   color: #fecaca !important;
 }
-/* Quick Stats: dark pills so white labels/values stay readable */
+
 body.season-christmas .ft-sidebar .ft-stat-row {
   background: rgba(0, 0, 0, 0.32) !important;
   border: 1px solid rgba(254, 202, 202, 0.28) !important;
@@ -3506,7 +3506,7 @@ body:not(.season-christmas) .xmas-global-decor { display: none !important; }
   object-position: right bottom;
   background: transparent !important;
   filter: drop-shadow(0 10px 18px rgba(127, 29, 29, 0.14));
-  /* Fade hard PNG rectangle edges into the hero cream so no visible "box" */
+
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 100%),
     linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
   -webkit-mask-composite: source-in;
@@ -3683,7 +3683,7 @@ body.season-christmas .ft-sidebar #sidebar-user-email {
   color: rgba(255, 228, 230, 0.85) !important;
 }
 
-/* Christmas + Dark mode: keep festive red accents, force readable light text */
+
 body.season-christmas[data-mode="dark"],
 body.season-christmas[data-mode="dark"].ft-body,
 html.season-christmas[data-mode="dark"] {
@@ -3873,7 +3873,7 @@ body.season-valentines .vday-page-banner::after {
   pointer-events: none;
 }
 
-/* Savings / module pages — match dashboard pink surfaces */
+
 body.season-valentines .savings-page,
 body.season-valentines .spending-page,
 body.season-valentines .income-page,
@@ -3975,7 +3975,7 @@ body.season-valentines .dash-metric-card {
   color: var(--ft-ink);
 }
 
-/* Tutorial — coach mark; page underneath stays visible */
+
 .tutorial-overlay {
   position: fixed;
   inset: 0;
@@ -4028,7 +4028,7 @@ body[data-mode="dark"] .tutorial-target {
   box-shadow: 0 0 0 8px rgba(241, 194, 204, 0.2), 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
-/* Achievement sticker */
+
 .achievement-popup {
   position: fixed;
   left: 50%;
@@ -4085,7 +4085,7 @@ body[data-mode="dark"] .tutorial-target {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Auth modal — light soft variant */
+
 .auth-modal-overlay {
   position: fixed;
   inset: 0;
@@ -4266,7 +4266,7 @@ body[data-mode="dark"] .tutorial-target {
   height: 1rem;
   pointer-events: none;
 }
-/* Hide browser’s built-in password reveal (causes double eye with our toggle) */
+
 .input-group input[type="password"]::-ms-reveal,
 .input-group input[type="password"]::-ms-clear,
 .input-group input[type="text"]::-ms-reveal,
@@ -4450,7 +4450,7 @@ body[data-mode="dark"] .password-feedback.error {
   cursor: pointer;
 }
 
-/* Short laptop / small viewport — keep Sign Up / Login Now reachable */
+
 @media (max-height: 820px) {
   .login-modal-content .tabs-container { margin: 0.7rem 0; }
   .login-modal-content .input-group { margin-bottom: 0.55rem; }
@@ -4557,7 +4557,7 @@ body[data-mode="dark"] .password-feedback.error {
   .tutorial-overlay { align-items: center; }
 }
 
-/* ---- Income page overhaul ---- */
+
 .income-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .income-hero {
   position: relative;
@@ -5112,6 +5112,15 @@ body.season-valentines .module-hero-actions {
   font-style: normal;
   margin-left: 0.1rem;
 }
+.income-field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: #7a868f;
+  line-height: 1.35;
+}
+body[data-mode="dark"] .income-field-hint { color: #9aa3ad; }
 .income-optional {
   font-weight: 700;
   color: #7a868f;
@@ -5350,7 +5359,7 @@ body[data-mode="dark"] .income-balance-card {
   background: linear-gradient(160deg, rgba(45, 58, 71, 0.9), rgba(247, 200, 211, 0.18));
 }
 
-/* ===== Spending page ===== */
+
 .spending-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .spending-header {
   display: flex;
@@ -5934,7 +5943,7 @@ body[data-mode="dark"] .spend-quote {
   color: #F7C8D3;
 }
 
-/* ===== Savings page ===== */
+
 .savings-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .savings-header {
   display: flex;
@@ -6067,6 +6076,17 @@ body[data-mode="dark"] .spend-quote {
 }
 .sav-goal-complete-btn i { width: 0.85rem; height: 0.85rem; }
 .sav-goal-complete-btn:hover { background: rgba(168, 181, 138, 0.32); }
+.sav-goal-card-actions {
+  display: flex; flex-direction: column; gap: 0.35rem;
+}
+.sav-goal-deposit-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  width: 100%; height: 2.1rem; border-radius: 999px;
+  border: 1.5px solid rgba(180, 106, 114, 0.55); background: rgba(180, 106, 114, 0.12);
+  color: #8f4e56; font-size: 0.7rem; font-weight: 800; cursor: pointer;
+}
+.sav-goal-deposit-btn i { width: 0.85rem; height: 0.85rem; }
+.sav-goal-deposit-btn:hover { background: rgba(180, 106, 114, 0.22); }
 .sav-goal-ico {
   width: 2.2rem; height: 2.2rem; border-radius: 0.75rem; display: inline-flex; align-items: center; justify-content: center;
   margin-bottom: 0.55rem; color: #fff;
@@ -6106,6 +6126,7 @@ body[data-mode="dark"] .spend-quote {
   display: inline-flex; padding: 0.18rem 0.55rem; border-radius: 999px; font-size: 0.65rem; font-weight: 800;
 }
 .sav-status-pill.done { background: rgba(168,181,138,0.35); color: #5a6d45; }
+.sav-status-pill.deposited { background: rgba(180,106,114,0.2); color: #8f4e56; }
 .sav-status-pill.progress { background: rgba(245,158,11,0.22); color: #b45309; }
 .sav-row-actions { display: inline-flex; gap: 0.3rem; }
 .sav-row-actions button {
@@ -6162,7 +6183,7 @@ body[data-mode="dark"] .sav-donut-center strong { color: #F7F1E0; }
 body[data-mode="dark"] .sav-goal-card,
 body[data-mode="dark"] .sav-quote { background: #2d3a42; color: #F7C8D3; }
 
-/* ===== Investment page ===== */
+
 .investment-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .investment-header {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.85rem;
@@ -6643,7 +6664,7 @@ body[data-mode="dark"] .investment-period-select {
   background: #2d3a42; color: #F7F1E0; border-color: rgba(247,200,211,0.25);
 }
 
-/* ===== Protection page ===== */
+
 .protection-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .protection-header {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.85rem;
@@ -6931,7 +6952,7 @@ body[data-mode="dark"] .protection-period-select {
   background: #2d3a42; color: #F7F1E0; border-color: rgba(247,200,211,0.25);
 }
 
-/* ===== Analytics page ===== */
+
 .analytics-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .analytics-header {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.85rem;
@@ -7191,7 +7212,7 @@ body[data-mode="dark"] .analytics-mini-select {
   background: #2d3a42; color: #F7F1E0; border-color: rgba(247,200,211,0.25);
 }
 
-/* ===== Calculator Page ===== */
+
 .sidebar-quote {
   display: flex;
   align-items: flex-start;
@@ -7449,7 +7470,7 @@ body[data-mode="dark"] .calculator-period-select {
   background: #2d3a42; color: #F7F1E0; border-color: rgba(247, 200, 211, 0.25);
 }
 
-/* ===== Settings Page ===== */
+
 .settings-page:not(.hidden) { display: flex; flex-direction: column; gap: 1.1rem; }
 .settings-header {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.85rem;
@@ -7696,7 +7717,7 @@ body[data-mode="dark"] .calculator-period-select {
 .settings-page-quote:hover { transform: translateY(-2px); box-shadow: 0 12px 24px var(--theme-glow); }
 .settings-page-quote i { width: 1.15rem; height: 1.15rem; flex-shrink: 0; color: var(--theme-primary); }
 
-/* Force all module footer quotes to follow active theme (no hardcoded pink) */
+
 body:not([class*="season-"]) .spend-quote,
 body:not([class*="season-"]) .sav-quote,
 body:not([class*="season-"]) .inv-quote,
@@ -7746,7 +7767,7 @@ body[data-mode="dark"] {
   --ft-muted: #c5d0d6;
 }
 
-/* ===== Dark mode contrast pass (site-wide) ===== */
+
 body[data-mode="dark"] .ft-sidebar .nav-side-btn,
 body[data-mode="dark"] .ft-sidebar .nav-side-btn i {
   color: #fff7f4 !important;
@@ -7760,7 +7781,7 @@ body[data-mode="dark"] .ft-sidebar .nav-side-btn:not(.active):not([aria-current=
   stroke-width: 2.25;
 }
 
-/* Pastel metric cards: keep light surfaces, use dark ink */
+
 body[data-mode="dark"] .spend-metric,
 body[data-mode="dark"] .sav-metric,
 body[data-mode="dark"] .inv-metric,
@@ -7804,7 +7825,7 @@ body[data-mode="dark"] .spend-metric-trend.is-down,
 body[data-mode="dark"] .inv-metric-badge.is-down,
 body[data-mode="dark"] .dash-metric-trend.is-down { color: #9f1239 !important; }
 
-/* Dark cards / tables: light text */
+
 body[data-mode="dark"] .ft-card,
 body[data-mode="dark"] .settings-card,
 body[data-mode="dark"] .calc-card {
@@ -7851,7 +7872,7 @@ body[data-mode="dark"] .income-type-pill.is-other {
   color: #e8eef4 !important;
 }
 
-/* Subtitles / muted / placeholders */
+
 body[data-mode="dark"] .income-hero-sub,
 body[data-mode="dark"] .spending-sub,
 body[data-mode="dark"] .savings-sub,
@@ -7875,7 +7896,7 @@ body[data-mode="dark"] textarea {
   color: #F7F1E0;
 }
 
-/* Breakdown / legend / secondary rows */
+
 body[data-mode="dark"] .income-breakdown li,
 body[data-mode="dark"] .income-breakdown span,
 body[data-mode="dark"] .income-breakdown strong,
@@ -7910,7 +7931,7 @@ body[data-mode="dark"] .spend-alerts-list strong {
   border-color: rgba(247, 200, 211, 0.18) !important;
 }
 
-/* Soft pastel tip/alert chips: dark text if surface is light */
+
 body[data-mode="dark"] .income-insight[style*="background"],
 body[data-mode="dark"] .sav-insights li[style*="background"],
 body[data-mode="dark"] .inv-insights li[style*="background"],
@@ -7920,7 +7941,7 @@ body[data-mode="dark"] .dash-health-footer {
   color: #2D3A47 !important;
 }
 
-/* Pagination / empty states */
+
 body[data-mode="dark"] .income-pager,
 body[data-mode="dark"] .income-pager button,
 body[data-mode="dark"] .pager,
@@ -7929,7 +7950,7 @@ body[data-mode="dark"] .income-empty {
   color: #d5dde2 !important;
 }
 
-/* Status pills on dark rows */
+
 body[data-mode="dark"] .status-pill,
 body[data-mode="dark"] .prot-status,
 body[data-mode="dark"] .sav-status,
@@ -7939,7 +7960,7 @@ body[data-mode="dark"] .goal-status {
   border: 1px solid rgba(134, 239, 172, 0.35);
 }
 
-/* Christmas dark: override seasonal dark-red ink on dark surfaces */
+
 body.season-christmas[data-mode="dark"] {
   --ft-lagoon: #e8eef2 !important;
   --ft-ink: #F7F1E0 !important;
@@ -8002,7 +8023,7 @@ body.season-valentines[data-mode="dark"] .dash-metric-card .dash-metric-value {
   color: #2D3A47 !important;
 }
 
-/* Extra secondary text that stayed dark-on-dark */
+
 body[data-mode="dark"] .sav-goal-amt,
 body[data-mode="dark"] .sav-goal-foot,
 body[data-mode="dark"] .sav-goal-complete-btn,
@@ -8032,6 +8053,15 @@ body[data-mode="dark"] .sav-goal-complete-btn {
   background: rgba(168, 181, 138, 0.22) !important;
   border-color: rgba(168, 181, 138, 0.45) !important;
   color: #e8f5d8 !important;
+}
+body[data-mode="dark"] .sav-goal-deposit-btn {
+  background: rgba(180, 106, 114, 0.22) !important;
+  border-color: rgba(180, 106, 114, 0.45) !important;
+  color: #f3c4ca !important;
+}
+body[data-mode="dark"] .savings-outline-btn {
+  background: rgba(45, 58, 71, 0.65) !important;
+  color: #f3c4ca !important;
 }
 body[data-mode="dark"] .goal-card button,
 body[data-mode="dark"] .goals-card button[aria-label],
@@ -8078,7 +8108,7 @@ body.season-christmas[data-mode="dark"] .income-balance-label {
   color: #F7F1E0 !important;
 }
 
-/* ===== Easter Edition (site-wide) ===== */
+
 .easter-only[hidden] { display: none !important; }
 body.season-easter,
 body.season-easter.ft-body,
@@ -8456,7 +8486,7 @@ body.season-easter .sidebar-quote {
   .easter-float-br { width: 4.25rem; }
 }
 
-/* Easter + Dark mode */
+
 body.season-easter[data-mode="dark"],
 body.season-easter[data-mode="dark"].ft-body {
   --ft-ink: #F7F1E0;
@@ -8528,7 +8558,7 @@ body.season-easter[data-mode="dark"] .dash-metric-card .dash-metric-trend {
 
 
 
-/* ===== Halloween Edition (site-wide) ===== */
+
 .halloween-only[hidden] { display: none !important; }
 body.season-halloween,
 body.season-halloween.ft-body,

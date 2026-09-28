@@ -1,7 +1,3 @@
-/**
- * FinWise — account sync via Supabase (Sign In / Sign Up)
- * Depends on: @supabase/supabase-js (CDN) + supabase-config.js
- */
 (function (global) {
   'use strict';
 
@@ -135,7 +131,7 @@
     return toCloudRow(inserted.data);
   }
 
-  /** Realtime: call onRow(cloudRow) when this email's account row changes */
+
   function subscribeByEmail(email, onRow) {
     var normalized = String(email || '').trim().toLowerCase();
     if (!normalized) return Promise.reject(new Error('Email required'));

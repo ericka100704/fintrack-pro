@@ -1,7 +1,3 @@
-/**
- * FinWise — Supabase CRUD helpers (browser CDN SDK)
- * Depends on: @supabase/supabase-js (CDN) + supabase-config.js
- */
 (function (global) {
   'use strict';
 
@@ -43,7 +39,7 @@
     throw new Error(err.message || err.details || err.hint || JSON.stringify(err));
   }
 
-  /** CREATE — insert one row */
+
   async function createItem(payload) {
     var db = getClient();
     var row = {
@@ -58,7 +54,7 @@
     return result.data;
   }
 
-  /** READ — fetch all rows (newest first) */
+
   async function readItems() {
     var db = getClient();
     var result = await db
@@ -69,7 +65,7 @@
     return result.data || [];
   }
 
-  /** READ one by id */
+
   async function readItemById(id) {
     var db = getClient();
     var result = await db.from(tableName()).select('*').eq('id', id).single();
@@ -77,7 +73,7 @@
     return result.data;
   }
 
-  /** UPDATE — edit existing row */
+
   async function updateItem(id, payload) {
     var db = getClient();
     var patch = {
@@ -92,7 +88,7 @@
     return result.data;
   }
 
-  /** DELETE — remove row by id */
+
   async function deleteItem(id) {
     var db = getClient();
     var result = await db.from(tableName()).delete().eq('id', id).select().single();

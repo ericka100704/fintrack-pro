@@ -1,7 +1,6 @@
-/* FinWise — soft dashboard-first finance hub (localStorage + cloud accounts) */
 
 const FT_CLOUD_UPSTREAM = 'https://crudcrud.com/api/06c45b4c02184e9785a67eea36a7d8ad/accounts';
-/** Previous endpoint — read-only fallback to recover accounts if still reachable. */
+
 const FT_CLOUD_LEGACY = 'https://crudcrud.com/api/dcc16c221e224c5b9ccb81ba43d2f5af/accounts';
 const FT_CLOUD_EPOCH = '06c45b4c';
 try {
@@ -9,7 +8,7 @@ try {
     localStorage.setItem('fintrack_cloud_epoch', FT_CLOUD_EPOCH);
     localStorage.removeItem('fintrack_cloud_ids');
   }
-} catch (e) { /* ignore */ }
+} catch (e) {  }
 
 function ftIsHostedHttps() {
   return typeof location !== 'undefined'
@@ -75,7 +74,7 @@ function ftLooksLikeQuota(status, text) {
     || (status === 400 && /exceeded|quota/.test(t));
 }
 
-/** One try per base (proxy then direct). Avoid burning free-tier request quotas. */
+
 async function ftCloudRequest(opts) {
   opts = opts || {};
   const method = opts.method || 'GET';
@@ -200,9 +199,9 @@ const ACCOUNT_SYSTEM = {
     if (!localUser) return true;
     const remoteTs = this.remoteUpdatedAt(remoteRow);
     const localTs = this.userUpdatedAt(localUser);
-    // Strict newer only — equal timestamps must not re-apply every poll (causes UI flicker)
+
     if (remoteTs > localTs) return true;
-    // Never keep empty local over cloud data that has finance rows (common laptop wipe bug)
+
     if (this.accountDataIsEmpty(localUser.data) && !this.accountDataIsEmpty(remoteRow.data)) {
       return true;
     }
@@ -334,7 +333,7 @@ const ACCOUNT_SYSTEM = {
       list = await this.fetchCloudAccounts();
     } catch (err) {
       if (ftSupabaseReady()) throw err;
-      // Try legacy endpoint once (read-only) to recover existing accounts.
+
       try {
         const legacy = await ftCloudRequest({ method: 'GET', bases: [FT_CLOUD_LEGACY] });
         if (legacy.ok) {
@@ -357,7 +356,7 @@ const ACCOUNT_SYSTEM = {
       try {
         await this.pullCloudAccounts(force);
       } catch (err) {
-        // Local accounts remain usable; _lastCloudError already set when known.
+
       }
     })();
     this._cloudSyncing = run;
@@ -370,7 +369,7 @@ const ACCOUNT_SYSTEM = {
     if (!ftSupabaseReady()) return;
     clearTimeout(this._cloudPushTimer);
     const self = this;
-    // Near-instant upload so the other device can poll/realtime within ~1–2s
+
     this._cloudPushTimer = setTimeout(function () {
       self.pushUserToCloud(username, { force: true });
     }, 120);
@@ -381,11 +380,7 @@ const ACCOUNT_SYSTEM = {
     this._cloudPushTimer = null;
     return this.pushUserToCloud(username, { force: true });
   },
-  /**
-   * Upload local account to cloud.
-   * opts.force = true → always upload (after local edits).
-   * opts.force = false → if remote is newer, apply remote and skip upload (boot/focus).
-   */
+
   async pushUserToCloud(username, opts) {
     opts = opts || {};
     const force = !!opts.force;
@@ -411,14 +406,14 @@ const ACCOUNT_SYSTEM = {
               return 'remote';
             }
           }
-          // Block empty local from wiping richer cloud data
+
           if (this.accountDataIsEmpty(localNow.data) && !this.accountDataIsEmpty(remote.data)) {
             this.applyCloudList([remote]);
             this._lastCloudError = null;
             return 'remote';
           }
         } else if (!force) {
-          /* no remote row yet — fall through to create */
+
         }
         const latest = this.getUsers()[username] || user;
         const record = this.cloudRecordFromUser(username, latest);
@@ -435,7 +430,7 @@ const ACCOUNT_SYSTEM = {
       }
     }
 
-    // Slim payload first attempt — large finance blobs can fail free APIs.
+
     const fullBody = JSON.stringify(this.cloudRecordFromUser(username, user));
     const slimUser = Object.assign({}, user, {
       avatar: '',
@@ -487,7 +482,7 @@ const ACCOUNT_SYSTEM = {
     }
     return false;
   },
-  /** Pull latest cloud copy for the signed-in user and refresh in-memory users map. */
+
   async syncCurrentUserFromCloud() {
     const current = this.getCurrentUser();
     if (!current) return null;
@@ -502,7 +497,7 @@ const ACCOUNT_SYSTEM = {
         await this.pullCloudAccounts(true);
       }
     } catch (err) {
-      /* keep local */
+
     }
     return this.getUsers()[username] || null;
   },
@@ -519,7 +514,7 @@ const ACCOUNT_SYSTEM = {
         const users = this.getUsers();
         return { username: username, user: users[username] };
       }
-      // Bypass pull throttle for login lookups
+
       this._lastPullAt = 0;
       const list = await this.fetchCloudAccounts();
       this._lastPullAt = Date.now();
@@ -704,7 +699,7 @@ const ACCOUNT_SYSTEM = {
     users[username].data = data;
     this.touchUser(users[username]);
     this.saveUsers(users);
-    // Upload immediately so the other device can pick it up in seconds
+
     this.flushCloudPush(username);
     return true;
   },
@@ -811,6 +806,83 @@ let achievementShowing = false;
 function sum(arr, key) {
   key = key || 'amount';
   return (arr || []).reduce((s, i) => s + Number(i[key] || 0), 0);
+}
+
+function isSavingsContribution(s) {
+  return !!(s && (s.isContribution || s.kind === 'contribution'));
+}
+
+function savingsBalanceRows() {
+  return (state.savings || []).filter(function (s) { return !isSavingsContribution(s); });
+}
+
+function activeSavingsGoals() {
+  return savingsBalanceRows().filter(function (s) { return !s.isCompleted; });
+}
+
+/** Calendar-fraction months until due (min 1 if still in the future). */
+function monthsUntilDueDate(dueDateStr) {
+  const dueRaw = toDateInputValue(dueDateStr);
+  if (!dueRaw) return 0;
+  const due = new Date(dueRaw + 'T00:00:00');
+  if (Number.isNaN(due.getTime())) return 0;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  if (due.getTime() <= now.getTime()) return 0;
+  const days = (due.getTime() - now.getTime()) / 86400000;
+  return Math.max(1, days / 30.4375);
+}
+
+/**
+ * Suggested monthly = (target − amount saved) ÷ months until due.
+ * Returns null when inputs are incomplete / invalid.
+ */
+function calcSuggestedMonthlySavings(amountSaved, target, dueDateStr) {
+  const targetAmt = Number(target);
+  const saved = Number(amountSaved) || 0;
+  if (!Number.isFinite(targetAmt) || !(targetAmt > 0)) return null;
+  const remaining = Math.max(0, targetAmt - saved);
+  if (remaining <= 0) return 0;
+  const months = monthsUntilDueDate(dueDateStr);
+  if (!(months > 0)) return null;
+  return Math.ceil((remaining / months) * 100) / 100;
+}
+
+let savingsMonthlyManual = false;
+
+function updateSuggestedMonthlySavings(opts) {
+  opts = opts || {};
+  const force = !!opts.force;
+  const mode = ((document.getElementById('savings-modal-mode') || {}).value || 'goal');
+  const monthlyEl = document.getElementById('savings-modal-monthly');
+  const hintEl = document.getElementById('savings-modal-monthly-hint');
+  if (mode === 'deposit') {
+    if (hintEl) hintEl.textContent = '';
+    return;
+  }
+  const amount = parseFloat((document.getElementById('savings-modal-amount') || {}).value);
+  const target = parseFloat((document.getElementById('savings-modal-target') || {}).value);
+  const due = (document.getElementById('savings-modal-due') || {}).value || '';
+  const suggested = calcSuggestedMonthlySavings(amount, target, due);
+
+  if (hintEl) {
+    if (suggested == null) {
+      hintEl.textContent = 'Suggested from target, amount saved, and due date.';
+    } else if (suggested === 0) {
+      hintEl.textContent = 'Goal already reached — no monthly needed.';
+    } else {
+      hintEl.textContent = 'Suggested: ' + peso(suggested) + ' / mo to hit target on time.';
+    }
+  }
+
+  if (!monthlyEl) return;
+  if (!force && savingsMonthlyManual) return;
+  if (suggested == null) {
+    if (force) monthlyEl.value = '';
+    return;
+  }
+  monthlyEl.value = suggested === 0 ? '0' : String(suggested);
+  savingsMonthlyManual = false;
 }
 
 function peso(n) {
@@ -1109,25 +1181,25 @@ function normalizeProtType(t) {
   return 'Insurance Coverage';
 }
 
-/* ---------- Totals & scoring ---------- */
+
 function totals() {
   const income = sum(state.income);
   const spending = sum(state.expenses);
-  const savings = sum(state.savings);
+  const savings = sum(savingsBalanceRows());
   const investments = sum(state.investments);
   const protection = sum(state.protection);
-  // Protection amounts are coverage values, not cash outflows — exclude from remaining balance
+
   const remaining = income - spending - savings - investments;
   const savingsRate = income > 0 ? (savings / income) * 100 : 0;
   const spendingRatio = income > 0 ? (spending / income) * 100 : 0;
   const monthlySpend = spending;
-  const ef = state.savings.filter(s => s.isEmergency).reduce((a, s) => a + Number(s.amount), 0)
+  const ef = savingsBalanceRows().filter(s => s.isEmergency).reduce((a, s) => a + Number(s.amount), 0)
     + state.protection.filter(p => /emergency/i.test(String(p.policyType || ''))).reduce((a, p) => a + Number(p.amount), 0);
   const efMonths = monthlySpend > 0 ? ef / monthlySpend : (ef > 0 ? 99 : 0);
   return { income, spending, savings, investments, protection, remaining, savingsRate, spendingRatio, ef, efMonths };
 }
 
-/** True when the user has at least one real finance entry. */
+
 function hasFinancialData() {
   return state.income.length > 0
     || state.expenses.length > 0
@@ -1136,7 +1208,7 @@ function hasFinancialData() {
     || state.protection.length > 0;
 }
 
-/** Encouraging 6-month projected net-worth series from current assets + surplus. */
+
 function buildNetWorthTrend(t) {
   if (!hasFinancialData()) return [0, 0, 0, 0, 0, 0];
   const assets = Math.max(0, t.savings + t.investments);
@@ -1179,7 +1251,7 @@ function pillarScores() {
   const savingsScore = t.savings <= 0
     ? 0
     : Math.min(100, t.savingsRate >= 20 ? 90 : t.savingsRate >= 10 ? 70 : 45);
-  // No spending yet with income = healthy blank slate (not a fake 90% ring on Allocation)
+
   const spendingScore = t.spending <= 0
     ? (t.income > 0 ? 100 : 0)
     : Math.min(100, t.spendingRatio <= 50 ? 90 : t.spendingRatio <= 70 ? 65 : t.spendingRatio <= 90 ? 40 : 20);
@@ -1246,7 +1318,7 @@ function pillarFocusCopy() {
 function formatFirstName(user) {
   if (!user) return 'there';
   let raw = (user.firstname || user.firstName || user.fullName || user.name || '').trim();
-  // Never greet with an email address
+
   if (!raw || raw.includes('@')) {
     const local = String(user.username || user.email || '').split('@')[0].trim();
     raw = local || 'there';
@@ -1384,7 +1456,7 @@ function buildNotifications() {
   return notes;
 }
 
-/* ---------- Theme & seasonal ---------- */
+
 function getStoredTheme() {
   return localStorage.getItem('fintrack_theme') || (state.settings && state.settings.theme) || 'soft';
 }
@@ -1458,7 +1530,7 @@ function setSeasonalMode(mode) {
   const allowed = ['auto', 'off', 'christmas', 'valentines', 'easter', 'halloween'];
   if (allowed.indexOf(mode) < 0) mode = 'auto';
   localStorage.setItem('fintrack_season_mode', mode);
-  // Calendar always follows real time — seasonal preview is look-only
+
   if (typeof state !== 'undefined') {
     const now = new Date();
     state.calMonth = now.getMonth();
@@ -1481,19 +1553,19 @@ function setSeasonalMode(mode) {
 function detectSeasonFromDate(d) {
   const m = d.getMonth() + 1;
   const day = d.getDate();
-  // Christmas Dec 15 – Jan 5
+
   if ((m === 12 && day >= 15) || (m === 1 && day <= 5)) return 'christmas';
-  // Valentine’s Feb 10 – 16
+
   if (m === 2 && day >= 10 && day <= 16) return 'valentines';
-  // Easter window Mar 20 – Apr 20
+
   if ((m === 3 && day >= 20) || (m === 4 && day <= 20)) return 'easter';
-  // Halloween Oct 25 – Nov 1
+
   if ((m === 10 && day >= 25) || (m === 11 && day <= 1)) return 'halloween';
   return null;
 }
 
 function getEasterSunday(year) {
-  // Anonymous Gregorian algorithm — returns { month: 0-based, day }
+
   const a = year % 19;
   const b = Math.floor(year / 100);
   const c = year % 100;
@@ -1659,14 +1731,14 @@ function applySeasonalAccent() {
     }
   }
 
-  // Refresh dash greeting / charts for season skin (calendar stays on real current month)
+
   if (typeof updateSummaryMetrics === 'function' && document.getElementById('dash-greeting') && ACCOUNT_SYSTEM.getCurrentUser()) {
-    try { updateSummaryMetrics(); } catch (e) { /* boot */ }
+    try { updateSummaryMetrics(); } catch (e) {  }
   } else if (typeof updateCharts === 'function') {
-    try { updateCharts(); } catch (e) { /* boot */ }
+    try { updateCharts(); } catch (e) {  }
   }
   if (typeof renderMiniCalendar === 'function') {
-    try { renderMiniCalendar(); } catch (e) { /* boot */ }
+    try { renderMiniCalendar(); } catch (e) {  }
   }
 }
 
@@ -1687,7 +1759,7 @@ function renderThemePresets() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-/* ---------- Auth UI ---------- */
+
 function lockBodyScroll() {
   document.body.classList.add('modal-open');
   document.documentElement.classList.add('modal-open');
@@ -1816,7 +1888,7 @@ async function handleLoginForm(e) {
   }
   setAuthBtnLoading(btn, true, 'Signing in...');
   try {
-    // Always pull cloud first so phone-created accounts appear on laptop
+
     await ACCOUNT_SYSTEM.ensureCloudSync(true);
     await ACCOUNT_SYSTEM.importCloudUserByEmail(email);
     let result = ACCOUNT_SYSTEM.login(email, password);
@@ -1830,7 +1902,7 @@ async function handleLoginForm(e) {
       const user = ACCOUNT_SYSTEM.getCurrentUser();
       showToast('Welcome back, ' + user.firstname + '!', 'success');
       fireConfetti();
-      // Cloud was pulled above — load that data; do not overwrite newer remote with stale local
+
       loadUserData(result.username);
       updateUserUI();
       navigateTo('dashboard');
@@ -1991,7 +2063,7 @@ function updateUserUI() {
   lucide.createIcons();
 }
 
-/* ---------- Data load / save ---------- */
+
 function loadUserData(username, opts) {
   opts = opts || {};
   let data = ensureMigratedData(ACCOUNT_SYSTEM.getUserData(username));
@@ -2032,7 +2104,7 @@ function saveUserData() {
   });
 }
 
-/** Pull cloud finance data into the open session (phone ↔ laptop). */
+
 async function refreshFinanceFromCloud(opts) {
   opts = opts || {};
   const user = ACCOUNT_SYSTEM.getCurrentUser();
@@ -2053,11 +2125,11 @@ async function refreshFinanceFromCloud(opts) {
     if (opts.toast) showToast('Synced: ' + (user.email || user.username), 'success');
     return true;
   }
-  // Timestamp-only drift: keep local UI still (no count animation)
+
   if (after && afterTs !== beforeTs && afterFp === beforeFp) {
     return false;
   }
-  // Local may be newer — soft push without clobbering richer remote
+
   if (ftSupabaseReady()) {
     const result = await ACCOUNT_SYSTEM.pushUserToCloud(user.username, { force: false });
     if (result === 'remote') {
@@ -2119,7 +2191,7 @@ function startLiveCloudSync() {
       updateUserUI();
     }).then(function (channel) {
       _ftRealtimeChannel = channel;
-    }).catch(function () { /* polling still runs */ });
+    }).catch(function () {  });
   }
 }
 
@@ -2145,7 +2217,7 @@ function isFinanceDataEmpty(data) {
     && !(data.goals && data.goals.length);
 }
 
-/** Detect the bundled demo pack (used to heal corrupted "original" backups). */
+
 function looksLikeBundledSample(data) {
   if (!data || !Array.isArray(data.income) || !Array.isArray(data.expenses)) return false;
   const incomeDescs = data.income.map(function (x) { return String(x.desc || ''); });
@@ -2220,7 +2292,7 @@ function toggleSampleData() {
           try { restore = ensureMigratedData(JSON.parse(raw)); } catch (e) { restore = null; }
         }
 
-        // Heal bad backups: sample pack was wrongly saved as "original"
+
         const wasEmpty = meta && meta.wasEmpty === true;
         const shouldEmpty = forceClear
           || !restore
@@ -2258,7 +2330,7 @@ function toggleSampleData() {
           savedAt: new Date().toISOString()
         }));
       } else {
-        // Heal older buggy backups that accidentally stored the sample pack as "original"
+
         try {
           const parsed = ensureMigratedData(JSON.parse(existingBackup));
           let meta = null;
@@ -2272,7 +2344,7 @@ function toggleSampleData() {
               healed: true
             }));
           }
-        } catch (e) { /* keep existing backup */ }
+        } catch (e) {  }
       }
 
       const sample = ensureMigratedData(ACCOUNT_SYSTEM.getSampleData());
@@ -2296,7 +2368,7 @@ function updateSampleButton() {
     btn.dataset.forceClearSample = '';
     return;
   }
-  // Demo pack still on screen after a bad restore/exit — let user zero out
+
   if (looksLikeBundledSample(snapshotFinanceData())) {
     btn.textContent = 'Back to Original Data';
     btn.dataset.forceClearSample = '1';
@@ -2306,7 +2378,7 @@ function updateSampleButton() {
   btn.dataset.forceClearSample = '';
 }
 
-/* ---------- Navigation ---------- */
+
 function isDesktopSidebar() {
   return window.matchMedia('(min-width: 1024px)').matches;
 }
@@ -2338,7 +2410,7 @@ function syncDesktopSidebar() {
   if (overlay) overlay.classList.add('hidden');
   document.body.classList.remove('sidebar-open');
   document.body.style.overflow = '';
-  // Never leave a stuck expanded class — CSS :hover handles expand/collapse.
+
   document.body.classList.remove('sidebar-expanded');
 }
 
@@ -2346,7 +2418,7 @@ function initSidebarHoverExpand() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar || sidebar.dataset.hoverBound === '1') return;
   sidebar.dataset.hoverBound = '1';
-  // CSS :hover is the source of truth. Clear any stuck class on leave / outside click.
+
   sidebar.addEventListener('mouseleave', function () {
     document.body.classList.remove('sidebar-expanded');
   });
@@ -2412,7 +2484,7 @@ function navigateTo(view) {
   }, 40);
 }
 
-/* ---------- Tutorial ---------- */
+
 function clearTutorialHighlights() {
   document.querySelectorAll('.tutorial-target').forEach(function (el) {
     el.classList.remove('tutorial-target');
@@ -2447,7 +2519,7 @@ function showTutorialStep() {
     goView.classList.toggle('hidden', !step.view);
   }
 
-  // Navigate to the real page for this step
+
   if (step.view) {
     state.tutorialActive = true;
     navigateTo(step.view);
@@ -2485,7 +2557,7 @@ function finishTutorial() {
   navigateTo('dashboard');
 }
 
-/* ---------- Achievements ---------- */
+
 function getUnlockedIds() {
   const user = ACCOUNT_SYSTEM.getCurrentUser();
   if (!user) return [];
@@ -2528,26 +2600,26 @@ function drainAchievementQueue() {
   }, 3200);
 }
 
-/* ---------- CRUD ---------- */
+
 function handleModuleSubmit(e, module) {
   e.preventDefault();
   if (!ACCOUNT_SYSTEM.getCurrentUser()) { showToast('Please sign in first!', 'rose'); return; }
   clearSampleFlagIfNeeded();
   const id = Date.now();
   if (module === 'income') {
-    // Income uses modal submitIncomeModal()
+
     return;
   } else if (module === 'spending') {
-    // Spending uses modal submitExpenseModal()
+
     return;
   } else if (module === 'savings') {
-    // Savings uses modal submitSavingsModal()
+
     return;
   } else if (module === 'investment') {
-    // Investment uses modal submitInvestmentModal()
+
     return;
   } else if (module === 'protection') {
-    // Protection uses modal submitProtectionModal()
+
     return;
   }
   showToast('Saved to ' + module + '!', 'success');
@@ -2571,7 +2643,7 @@ function toggleSavingsProgress(id) {
   completeSavingsGoal(id);
 }
 
-/* ---------- Settings ---------- */
+
 function saveSettingsFromUI() {
   state.settings.budgetLimit = parseFloat(document.getElementById('set-budget').value) || 0;
   const alertEl = document.getElementById('set-expense-alert');
@@ -2684,7 +2756,7 @@ function populateSettingsUI() {
   updateUserUI();
 }
 
-/* ---------- Mini calendar ---------- */
+
 function shiftMiniCalendar(dir) {
   state.calMonth += dir;
   if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
@@ -2727,7 +2799,7 @@ function renderMiniCalendar() {
     const easterDate = eSeason ? getEasterSunday(state.calYear) : null;
     const isEasterDay = eSeason && easterDate && state.calMonth === easterDate.month && d === easterDate.day;
     const isHalloDay = hSeason && state.calMonth === 9 && d === 31;
-    // Valentine: today = heart; Christmas: Dec 24/25 = tree; Easter Sunday = egg; Oct 31 = pumpkin
+
     const isHeartDay = vSeason && (isToday || isFeb14);
     const dow = (startPad + d - 1) % 7;
     const isSun = dow === 0;
@@ -2766,7 +2838,7 @@ function renderMiniCalendar() {
   wrap.innerHTML = html;
 }
 
-/* ---------- Render modules ---------- */
+
 function renderApp() {
   updateSummaryMetrics();
   updateSidebarStats();
@@ -3349,7 +3421,7 @@ function submitIncomeModal(e) {
 }
 
 function populateIncomeSourceFilter() {
-  // Source/type filters removed from toolbar — kept as no-op for compatibility
+
 }
 
 function renderIncomeBreakdownAndInsights(chartRows) {
@@ -3439,8 +3511,8 @@ function renderIncomePage() {
   const t = totals();
   const remaining = t.remaining;
 
-  // Running remaining: newest-first list → first row = overall remaining,
-  // each next row adds the newer income amounts above it.
+
+
   let acc = remaining;
   const fullRun = {};
   rows.forEach(function (i) {
@@ -3912,7 +3984,7 @@ function renderSpendingPage() {
     }
   }
 
-  // Category bars
+
   const catMap = {};
   rows.forEach(function (e) {
     const c = normalizeSpendCat(e.category || 'Other Expenses');
@@ -3940,7 +4012,7 @@ function renderSpendingPage() {
     }
   }
 
-  // Insights
+
   const insights = document.getElementById('spend-insights');
   if (insights) {
     const tips = [];
@@ -3971,7 +4043,7 @@ function renderSpendingPage() {
     }).join('');
   }
 
-  // Mood bars
+
   const moodMap = { Happy: 0, Stressed: 0, 'Treating Myself': 0, Necessary: 0 };
   rows.forEach(function (e) {
     const m = e.mood && moodMap[e.mood] != null ? e.mood : 'Necessary';
@@ -3990,7 +4062,7 @@ function renderSpendingPage() {
     }).join('');
   }
 
-  // Alerts
+
   const alertThreshold = getExpenseAlertThreshold();
   const thresholdLabel = document.getElementById('spend-alert-threshold-label');
   if (thresholdLabel) thresholdLabel.textContent = peso(alertThreshold);
@@ -4077,7 +4149,7 @@ function updateSpendingCharts(rows) {
     })
   });
 
-  // Trend by calendar day within filtered set (or current month if empty range)
+
   const byDay = {};
   rows.forEach(function (e) {
     const key = e.date || todayISO();
@@ -4157,7 +4229,7 @@ const SAV_CAT_ICONS = {
 
 function inferSavingsCategory(item) {
   if (item && item.isEmergency) return 'Emergency Fund';
-  return normalizeSavCat(item && item.category); 
+  return normalizeSavCat(item && item.category);
 }
 
 function savingsGoalIcon(desc) {
@@ -4196,7 +4268,30 @@ function toDateInputValue(v) {
   return y + '-' + m + '-' + day;
 }
 
-function openSavingsModal(editId, mode) {
+function populateSavingsGoalSelect(selectedId) {
+  const sel = document.getElementById('savings-modal-goal-id');
+  if (!sel) return 0;
+  const goals = activeSavingsGoals();
+  let html = '<option value="">Select a savings goal…</option>';
+  goals.forEach(function (g) {
+    const targetAmt = Number(g.target) > 0 ? Number(g.target) : Number(g.amount) || 0;
+    const label = (g.desc || 'Goal') + ' — ' + peso(g.amount) + ' / ' + peso(targetAmt);
+    html += '<option value="' + g.id + '"'
+      + (selectedId != null && String(selectedId) === String(g.id) ? ' selected' : '')
+      + '>' + escapeHtml(label) + '</option>';
+  });
+  sel.innerHTML = html;
+  if (selectedId != null && goals.some(function (g) { return String(g.id) === String(selectedId); })) {
+    sel.value = String(selectedId);
+  }
+  return goals.length;
+}
+
+function openSavingsDepositModal(goalId) {
+  openSavingsModal(null, 'deposit', goalId);
+}
+
+function openSavingsModal(editId, mode, preselectGoalId) {
   if (!ACCOUNT_SYSTEM.getCurrentUser()) { showToast('Please sign in first!', 'rose'); return; }
   const modal = document.getElementById('savings-modal');
   if (!modal) return;
@@ -4205,7 +4300,11 @@ function openSavingsModal(editId, mode) {
     showToast('Could not find that savings goal.', 'rose');
     return;
   }
-  // History rows are archive-only (no edit)
+  if (item && isSavingsContribution(item)) {
+    showToast('Deposits can’t be edited — delete instead.', 'info');
+    return;
+  }
+
   if (item && item.isCompleted && mode !== 'goal') {
     showToast('Completed history entries can’t be edited — delete instead.', 'info');
     return;
@@ -4215,18 +4314,48 @@ function openSavingsModal(editId, mode) {
   if (modeEl) modeEl.value = resolvedMode;
 
   const isGoal = resolvedMode === 'goal';
+  const isDeposit = resolvedMode === 'deposit';
   const goalFields = document.getElementById('savings-modal-goal-fields');
   const targetInput = document.getElementById('savings-modal-target');
   const dueInput = document.getElementById('savings-modal-due');
   const targetReq = document.getElementById('savings-target-req');
   const dueReq = document.getElementById('savings-due-req');
-  if (goalFields) goalFields.style.display = '';
+  const depositWrap = document.getElementById('savings-modal-deposit-goal-wrap');
+  const descWrap = document.getElementById('savings-modal-desc-wrap');
+  const descInput = document.getElementById('savings-modal-desc');
+  const monthlyWrap = document.getElementById('savings-modal-monthly-wrap');
+  const categoryWrap = document.getElementById('savings-modal-category-wrap');
+  const categoryInput = document.getElementById('savings-modal-category');
+  const emergencyWrap = document.getElementById('savings-modal-emergency-wrap');
+  const amountLabel = document.getElementById('savings-modal-amount-label');
+  const goalSelect = document.getElementById('savings-modal-goal-id');
+
+  if (goalFields) goalFields.style.display = isDeposit ? 'none' : '';
   if (targetInput) targetInput.required = false;
   if (dueInput) dueInput.required = false;
   if (targetReq) targetReq.style.display = isGoal ? 'inline' : 'none';
   if (dueReq) dueReq.style.display = isGoal ? 'inline' : 'none';
+  if (depositWrap) depositWrap.style.display = isDeposit ? '' : 'none';
+  if (descWrap) descWrap.style.display = isDeposit ? 'none' : '';
+  if (descInput) descInput.required = !isDeposit;
+  if (monthlyWrap) monthlyWrap.style.display = isDeposit ? 'none' : '';
+  if (categoryWrap) categoryWrap.style.display = isDeposit ? 'none' : '';
+  if (categoryInput) categoryInput.required = !isDeposit;
+  if (emergencyWrap) emergencyWrap.style.display = isDeposit ? 'none' : 'flex';
+  if (amountLabel) amountLabel.textContent = isDeposit ? 'Amount to add' : 'Amount saved';
+  if (goalSelect) goalSelect.required = isDeposit;
 
-  if (item) {
+  if (isDeposit) {
+    const goalCount = populateSavingsGoalSelect(preselectGoalId != null ? preselectGoalId : null);
+    if (!goalCount) {
+      showToast('Create a savings goal first, then add money to it.', 'info');
+      openSavingsModal(null, 'goal');
+      return;
+    }
+    document.getElementById('savings-modal-title').textContent = 'Add Savings';
+    document.getElementById('savings-modal-subtitle').textContent = 'Log money and apply it to an existing savings goal.';
+    document.getElementById('savings-modal-save-label').textContent = 'Save Deposit';
+  } else if (item) {
     document.getElementById('savings-modal-title').textContent = isGoal ? 'Edit Goal' : 'Edit Savings';
     document.getElementById('savings-modal-subtitle').textContent = isGoal
       ? 'Update this savings goal.'
@@ -4252,6 +4381,23 @@ function openSavingsModal(editId, mode) {
   document.getElementById('savings-modal-category').value = item ? inferSavingsCategory(item) : 'Short-Term';
   document.getElementById('savings-modal-date').value = item ? (toDateInputValue(item.date) || todayISO()) : todayISO();
   document.getElementById('savings-modal-emergency').checked = !!(item && item.isEmergency);
+
+  savingsMonthlyManual = false;
+  if (item && !isDeposit) {
+    const suggested = calcSuggestedMonthlySavings(item.amount, item.target, item.dueDate);
+    const savedMonthly = Number(item.monthly);
+    const hasCustomMonthly = Number.isFinite(savedMonthly) && savedMonthly > 0;
+    if (hasCustomMonthly && suggested != null && Math.abs(savedMonthly - suggested) > 0.009) {
+      savingsMonthlyManual = true;
+    }
+  }
+  if (!isDeposit) {
+    updateSuggestedMonthlySavings({ force: !item });
+  } else {
+    const hintEl = document.getElementById('savings-modal-monthly-hint');
+    if (hintEl) hintEl.textContent = '';
+  }
+
   modal.style.display = 'flex';
   lockBodyScroll();
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -4269,12 +4415,55 @@ function submitSavingsModal(e) {
   clearSampleFlagIfNeeded();
   const editId = document.getElementById('savings-modal-edit-id').value;
   const mode = (document.getElementById('savings-modal-mode') || {}).value || 'goal';
+  const amount = parseFloat(document.getElementById('savings-modal-amount').value);
+  const startDate = toDateInputValue(document.getElementById('savings-modal-date').value) || todayISO();
+  const account = document.getElementById('savings-modal-account').value;
+
+  if (mode === 'deposit') {
+    const goalId = (document.getElementById('savings-modal-goal-id') || {}).value;
+    const goal = activeSavingsGoals().find(function (g) { return String(g.id) === String(goalId); });
+    if (!goal) {
+      showToast('Select a savings goal to apply this deposit.', 'rose');
+      return;
+    }
+    if (!Number.isFinite(amount) || !(amount > 0)) {
+      showToast('Enter an amount greater than 0', 'rose');
+      return;
+    }
+    goal.amount = Number(goal.amount || 0) + amount;
+    if (account) goal.account = account;
+    state.savings.push({
+      id: Date.now(),
+      kind: 'contribution',
+      isContribution: true,
+      goalId: goal.id,
+      desc: goal.desc,
+      amount: amount,
+      monthly: 0,
+      target: 0,
+      dueDate: '',
+      account: account,
+      category: inferSavingsCategory(goal),
+      date: startDate,
+      completedAt: startDate,
+      isCompleted: true,
+      isEmergency: false
+    });
+    triggerCardPulse('card-savings');
+    showToast('₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      + ' added to ' + (goal.desc || 'goal') + '!', 'success');
+    fireConfetti();
+    closeSavingsModal();
+    saveUserData();
+    checkAchievements();
+    renderApp();
+    return;
+  }
+
   const category = normalizeSavCat(document.getElementById('savings-modal-category').value);
   const isEmergency = document.getElementById('savings-modal-emergency').checked || category === 'Emergency Fund';
-  const amount = parseFloat(document.getElementById('savings-modal-amount').value);
   let target = parseFloat(document.getElementById('savings-modal-target').value);
   const dueDate = toDateInputValue(document.getElementById('savings-modal-due').value);
-  const startDate = toDateInputValue(document.getElementById('savings-modal-date').value) || todayISO();
   const desc = document.getElementById('savings-modal-desc').value.trim();
 
   if (!desc) {
@@ -4304,7 +4493,7 @@ function submitSavingsModal(e) {
     monthly: parseFloat(document.getElementById('savings-modal-monthly').value) || 0,
     target: target,
     dueDate: dueDate,
-    account: document.getElementById('savings-modal-account').value,
+    account: account,
     category: isEmergency ? 'Emergency Fund' : category,
     date: startDate,
     isEmergency: isEmergency
@@ -4316,7 +4505,7 @@ function submitSavingsModal(e) {
       showToast('Could not update — goal not found.', 'rose');
       return;
     }
-    if (row.isCompleted) {
+    if (row.isCompleted || isSavingsContribution(row)) {
       showToast('Completed history entries can’t be edited.', 'rose');
       return;
     }
@@ -4354,7 +4543,7 @@ function completeSavingsGoal(id, event) {
   item.completedAt = todayISO();
   if (!(Number(item.target) > 0)) item.target = Number(item.amount) || 0;
   clearSampleFlagIfNeeded();
-  // Prefer showing the month the goal was completed
+
   const histSel = document.getElementById('savings-history-month');
   if (histSel) {
     const d = new Date();
@@ -4385,7 +4574,7 @@ function populateSavingsHistoryMonthFilter() {
   keys.forEach(function (k) {
     html += '<option value="' + k + '">' + months[k] + '</option>';
   });
-  // Always include current month option even if empty
+
   const now = new Date();
   const curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   if (!months[curKey]) {
@@ -4404,7 +4593,12 @@ function openSavingsDeleteModal(id) {
   pendingSavingsDeleteId = item.id;
   const msg = document.getElementById('savings-delete-message');
   if (msg) {
-    msg.innerHTML = 'Are you sure you want to delete <strong>' + escapeHtml(item.desc || 'this record') + '</strong>?';
+    if (isSavingsContribution(item)) {
+      msg.innerHTML = 'Delete this <strong>' + peso(item.amount) + '</strong> deposit to <strong>'
+        + escapeHtml(item.desc || 'goal') + '</strong>? It will also be removed from the goal balance.';
+    } else {
+      msg.innerHTML = 'Are you sure you want to delete <strong>' + escapeHtml(item.desc || 'this record') + '</strong>?';
+    }
   }
   const modal = document.getElementById('savings-delete-modal');
   if (modal) modal.style.display = 'flex';
@@ -4426,9 +4620,18 @@ function confirmSavingsDelete() {
   const modal = document.getElementById('savings-delete-modal');
   if (modal) modal.style.display = 'none';
   unlockBodyScrollIfIdle();
+  const item = state.savings.find(function (i) { return String(i.id) === String(id); });
+  if (item && isSavingsContribution(item)) {
+    const goal = savingsBalanceRows().find(function (g) {
+      return String(g.id) === String(item.goalId) && !g.isCompleted;
+    });
+    if (goal) {
+      goal.amount = Math.max(0, Number(goal.amount || 0) - Number(item.amount || 0));
+    }
+  }
   state.savings = state.savings.filter(function (i) { return String(i.id) !== String(id); });
   clearSampleFlagIfNeeded();
-  showToast('Savings record deleted', 'rose');
+  showToast(item && isSavingsContribution(item) ? 'Deposit deleted' : 'Savings record deleted', 'rose');
   saveUserData();
   renderApp();
 }
@@ -4441,7 +4644,7 @@ function closeSavingsGoalModal() {
 
 function submitSavingsGoalModal(e) {
   e.preventDefault();
-  // Legacy modal → route into unified savings goal flow
+
   closeSavingsGoalModal();
   openSavingsModal(null, 'goal');
 }
@@ -4482,8 +4685,9 @@ function buildSavingsGrowthSeries(monthsCount) {
   const labels = [];
   const monthlyBars = [];
   const cumulative = [];
-  const monthlyAvg = state.savings.reduce(function (a, s) { return a + Number(s.monthly || 0); }, 0) || Math.max(500, sum(state.savings) / 12);
-  const total = sum(state.savings);
+  const balance = savingsBalanceRows();
+  const monthlyAvg = balance.reduce(function (a, s) { return a + Number(s.monthly || 0); }, 0) || Math.max(500, sum(balance) / 12);
+  const total = sum(balance);
   const n = monthsCount === 'all' ? 18 : Number(monthsCount) || 12;
   let running = Math.max(0, total - monthlyAvg * (n - 1));
   for (let i = n - 1; i >= 0; i--) {
@@ -4502,8 +4706,9 @@ function buildSavingsGrowthSeries(monthsCount) {
 function renderSavingsPage() {
   if (!document.getElementById('view-savings')) return;
   const t = totals();
-  const monthlySav = state.savings.reduce(function (a, s) { return a + Number(s.monthly || 0); }, 0);
-  const mom = monthOverMonthPct(state.savings);
+  const balanceRows = savingsBalanceRows();
+  const monthlySav = balanceRows.reduce(function (a, s) { return a + Number(s.monthly || 0); }, 0);
+  const mom = monthOverMonthPct(balanceRows);
   const period = ((document.getElementById('savings-period') || {}).value || 'month');
 
   const totalEl = document.getElementById('sav-total');
@@ -4529,7 +4734,7 @@ function renderSavingsPage() {
     else { trendEl.textContent = '↓ ' + abs + '% vs. last month'; trendEl.className = 'sav-metric-badge is-up'; }
   }
   if (etaEl) {
-    const activeGoals = state.savings.filter(function (s) { return !s.isCompleted; });
+    const activeGoals = activeSavingsGoals();
     if (!activeGoals.length) etaEl.textContent = 'Goals clear';
     else {
       const g = activeGoals.slice().sort(function (a, b) {
@@ -4546,12 +4751,12 @@ function renderSavingsPage() {
     }
   }
 
-  // Goals cards = active (not completed) savings
+
   const goalsRow = document.getElementById('savings-goals-row');
   if (goalsRow) {
-    const activeGoals = state.savings.filter(function (s) { return !s.isCompleted; });
+    const activeGoals = activeSavingsGoals();
     if (!activeGoals.length) {
-      goalsRow.innerHTML = '<div class="ft-card p-5 text-sm text-[var(--ft-muted)]">No active goals — click + Add Goal to start.</div>';
+      goalsRow.innerHTML = '<div class="ft-card p-5 text-sm text-[var(--ft-muted)]">No active goals — click + Add Goal to start, then use Add Savings to deposit money.</div>';
     } else {
       goalsRow.innerHTML = activeGoals.map(function (g) {
         const targetAmt = Number(g.target) > 0 ? Number(g.target) : Number(g.amount) || 0;
@@ -4573,17 +4778,23 @@ function renderSavingsPage() {
           + '<div class="sav-goal-foot"><span>' + pct + '% · ' + escapeHtml(due) + '</span>'
           + '<span class="sav-goal-status ' + statusClass + '">' + status + '</span></div>'
           + '</button>'
+          + '<div class="sav-goal-card-actions">'
+          + '<button type="button" class="sav-goal-deposit-btn" onclick="openSavingsDepositModal(' + g.id + ')">'
+          + '<i data-lucide="plus"></i> Add money</button>'
           + '<button type="button" class="sav-goal-complete-btn" onclick="completeSavingsGoal(' + g.id + ', event)">'
           + '<i data-lucide="check-circle-2"></i> Mark completed</button>'
+          + '</div>'
           + '</div>';
       }).join('');
     }
   }
 
-  // History table = completed savings only (own month viewer — not page period)
+
   populateSavingsHistoryMonthFilter();
   const histMonth = ((document.getElementById('savings-history-month') || {}).value || 'all');
-  let rows = state.savings.filter(function (s) { return !!s.isCompleted; }).slice().sort(function (a, b) {
+  let rows = state.savings.filter(function (s) {
+    return !!s.isCompleted || isSavingsContribution(s);
+  }).slice().sort(function (a, b) {
     const da = a.completedAt || a.date || '';
     const db = b.completedAt || b.date || '';
     return String(db).localeCompare(String(da)) || (b.id - a.id);
@@ -4602,21 +4813,26 @@ function renderSavingsPage() {
   const body = document.getElementById('savings-table-body');
   if (body) {
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="8" class="text-center text-[var(--ft-muted)] py-6">No completed savings in this month — mark a goal completed</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="text-center text-[var(--ft-muted)] py-6">No savings history yet — add a deposit or mark a goal completed</td></tr>';
     } else {
       body.innerHTML = rows.map(function (s) {
         const cat = inferSavingsCategory(s);
         const icon = SAV_CAT_ICONS[cat] || 'piggy-bank';
         const shownDate = s.completedAt || s.date || '—';
+        const isDeposit = isSavingsContribution(s);
+        const statusPill = isDeposit
+          ? '<span class="sav-status-pill deposited">Deposited</span>'
+          : '<span class="sav-status-pill done">Completed</span>';
+        const descLabel = isDeposit ? ('Deposit · ' + (s.desc || 'Goal')) : s.desc;
         return '<tr>'
           + '<td>' + escapeHtml(shownDate) + '</td>'
           + '<td><span class="sav-desc-cell"><span class="sav-desc-ico"><i data-lucide="' + icon + '"></i></span>'
-          + escapeHtml(s.desc) + '</span></td>'
+          + escapeHtml(descLabel) + '</span></td>'
           + '<td>' + escapeHtml(s.account || '') + '</td>'
           + '<td>' + escapeHtml(cat) + '</td>'
           + '<td class="font-black theme-text">' + peso(s.amount) + '</td>'
           + '<td>' + peso(s.monthly || 0) + '</td>'
-          + '<td><span class="sav-status-pill done">Completed</span></td>'
+          + '<td>' + statusPill + '</td>'
           + '<td><div class="sav-row-actions">'
           + '<button type="button" title="Delete" onclick="openSavingsDeleteModal(' + s.id + ')"><i data-lucide="trash-2"></i></button>'
           + '</div></td></tr>';
@@ -4624,11 +4840,11 @@ function renderSavingsPage() {
     }
   }
 
-  // Overall target: completed history vs still-in-progress goals
-  const completedSum = state.savings.reduce(function (a, s) {
+
+  const completedSum = balanceRows.reduce(function (a, s) {
     return a + (s.isCompleted ? Number(s.amount || 0) : 0);
   }, 0);
-  const activeSum = state.savings.reduce(function (a, s) {
+  const activeSum = balanceRows.reduce(function (a, s) {
     return a + (!s.isCompleted ? Number(s.amount || 0) : 0);
   }, 0);
   const overallTarget = getSavingsOverallTarget();
@@ -4648,14 +4864,14 @@ function renderSavingsPage() {
   if (oa) oa.textContent = peso(activeSum);
   if (or) or.textContent = peso(overallRemain);
 
-  // Insights
+
   const insights = document.getElementById('sav-insights');
   if (insights) {
     const tips = [];
     if (mom > 0) tips.push({ icon: 'check', color: '#A8B58A', text: 'Great job! Your savings grew ' + mom + '% vs last month.' });
     else if (mom < 0) tips.push({ icon: 'info', color: '#A9B7C6', text: 'Savings dipped vs last month — review contributions.' });
     else tips.push({ icon: 'check', color: '#A8B58A', text: 'Savings are steady month over month.' });
-    // Rate = total savings balances ÷ total logged income (can exceed 100% if income is incomplete).
+
     if (t.savingsRate > 100) {
       tips.push({
         icon: 'info',
@@ -4667,7 +4883,7 @@ function renderSavingsPage() {
     } else {
       tips.push({ icon: 'info', color: '#7f9bb8', text: 'Try raising monthly contribution toward a 20%+ savings rate.' });
     }
-    const nextGoal = state.savings.filter(function (g) { return !g.isCompleted && g.dueDate; })
+    const nextGoal = activeSavingsGoals().filter(function (g) { return !!g.dueDate; })
       .sort(function (a, b) { return String(a.dueDate).localeCompare(String(b.dueDate)); })[0];
     if (nextGoal) {
       tips.push({
@@ -4733,7 +4949,7 @@ function updateSavingsCharts() {
 
   const catMap = {};
   Object.keys(SAV_CAT_COLORS).forEach(function (k) { catMap[k] = 0; });
-  state.savings.forEach(function (s) {
+  savingsBalanceRows().forEach(function (s) {
     const c = inferSavingsCategory(s);
     catMap[c] = (catMap[c] || 0) + Number(s.amount || 0);
   });
@@ -4771,7 +4987,7 @@ function updateSavingsCharts() {
   });
 }
 
-/* ---------- Investment page ---------- */
+
 const INV_CAT_META = {
   'Stocks/Funds': { color: '#B46A72', icon: 'line-chart', short: 'Stocks' },
   'Business': { color: '#A8B58A', icon: 'store', short: 'Business' },
@@ -4795,6 +5011,73 @@ function investCurrentValue(item) {
 
 function investGain(item) {
   return investCurrentValue(item) - (Number(item.amount) || 0);
+}
+
+/** Signed paper P&L: current value − cost basis. */
+function investPnL(amount, currentValue) {
+  const cost = Number(amount) || 0;
+  const cv = Number(currentValue);
+  if (!Number.isFinite(cv)) return 0;
+  return cv - cost;
+}
+
+/**
+ * When investment current value rises, auto-add the gain delta to Income
+ * as Investment Income (avoids double-counting by using delta only).
+ */
+function addInvestmentGainToIncome(assetDesc, gainDelta, dateStr) {
+  const delta = Number(gainDelta);
+  if (!(delta > 0)) return false;
+  const name = (assetDesc || 'Investment').trim() || 'Investment';
+  state.income.push({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    desc: 'Gain from ' + name,
+    amount: Math.round(delta * 100) / 100,
+    type: 'Investment Income',
+    date: dateStr || todayISO(),
+    note: 'Auto-added from investment gain'
+  });
+  triggerCardPulse('card-income');
+  return true;
+}
+
+/**
+ * When investment current value falls, auto-add the loss to Spending
+ * (deducted from Investment) — never as negative income.
+ */
+function addInvestmentLossToExpense(assetDesc, lossAmount, dateStr) {
+  const loss = Math.abs(Number(lossAmount));
+  if (!(loss > 0)) return false;
+  const name = (assetDesc || 'Investment').trim() || 'Investment';
+  state.expenses.push({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    desc: 'Loss from ' + name,
+    amount: Math.round(loss * 100) / 100,
+    category: 'Other Expenses',
+    needWant: 'Need',
+    deductFrom: 'Investment',
+    date: dateStr || todayISO(),
+    mood: 'Stressed',
+    note: 'Auto-added from investment loss'
+  });
+  triggerCardPulse('card-spending');
+  return true;
+}
+
+/**
+ * Apply signed P&L delta: positive → Income, negative → Expense.
+ * Returns { gain: number, loss: number } of amounts actually logged.
+ */
+function syncInvestmentPnLDelta(assetDesc, pnlDelta, dateStr) {
+  const delta = Number(pnlDelta);
+  const result = { gain: 0, loss: 0 };
+  if (!Number.isFinite(delta) || delta === 0) return result;
+  if (delta > 0) {
+    if (addInvestmentGainToIncome(assetDesc, delta, dateStr)) result.gain = delta;
+  } else if (addInvestmentLossToExpense(assetDesc, delta, dateStr)) {
+    result.loss = Math.abs(delta);
+  }
+  return result;
 }
 
 function filterInvestmentsByPeriod(list) {
@@ -4872,13 +5155,40 @@ function submitInvestmentModal(e) {
   };
 
   clearSampleFlagIfNeeded();
+  let synced = { gain: 0, loss: 0 };
+  const userSetCurrent = !(currentRaw === '' || currentRaw == null);
   if (editId) {
     const idx = state.investments.findIndex(function (i) { return String(i.id) === String(editId); });
-    if (idx >= 0) state.investments[idx] = Object.assign({}, state.investments[idx], payload);
-    showToast('Investment updated!', 'success');
+    if (idx >= 0) {
+      const old = state.investments[idx];
+      const oldPnL = investPnL(old.amount, investCurrentValue(old));
+      const newPnL = investPnL(amount, currentValue);
+      const delta = newPnL - oldPnL;
+      state.investments[idx] = Object.assign({}, old, payload);
+      synced = syncInvestmentPnLDelta(desc, delta, date);
+    }
+    if (synced.gain > 0 && synced.loss > 0) {
+      showToast('Investment updated — ' + peso(synced.gain) + ' to Income, ' + peso(synced.loss) + ' to Spending', 'success');
+    } else if (synced.gain > 0) {
+      showToast('Investment updated — ' + peso(synced.gain) + ' gain added to Income', 'success');
+    } else if (synced.loss > 0) {
+      showToast('Investment updated — ' + peso(synced.loss) + ' loss added to Spending', 'info');
+    } else {
+      showToast('Investment updated!', 'success');
+    }
   } else {
     state.investments.push(Object.assign({ id: Date.now() }, payload));
-    showToast('Investment saved!', 'success');
+    // Only auto-sync when user typed current value (not estimated growth).
+    if (userSetCurrent) {
+      synced = syncInvestmentPnLDelta(desc, investPnL(amount, currentValue), date);
+    }
+    if (synced.gain > 0) {
+      showToast('Investment saved — ' + peso(synced.gain) + ' gain added to Income', 'success');
+    } else if (synced.loss > 0) {
+      showToast('Investment saved — ' + peso(synced.loss) + ' loss added to Spending', 'info');
+    } else {
+      showToast('Investment saved!', 'success');
+    }
     fireConfetti();
     triggerCardPulse('card-investments');
   }
@@ -5004,7 +5314,7 @@ function renderInvestmentPage() {
   const monthlyTrend = document.getElementById('inv-monthly-trend');
   if (monthlyTrend) monthlyTrend.textContent = monthly > 0 ? 'planned deposits' : 'set monthly ₱ on holdings';
 
-  // Category maps (by current value)
+
   const catMap = {};
   Object.keys(INV_CAT_META).forEach(function (k) { catMap[k] = 0; });
   useRows.forEach(function (i) {
@@ -5018,7 +5328,7 @@ function renderInvestmentPage() {
     if (!topCat || catMap[k] > catMap[topCat]) topCat = k;
   });
 
-  // Donut + legend
+
   const center = document.getElementById('inv-donut-total');
   if (center) {
     const totalTxt = peso(portfolio);
@@ -5067,7 +5377,7 @@ function renderInvestmentPage() {
     })
   });
 
-  // Growth chart
+
   const range = state.investGrowthRange || 12;
   document.querySelectorAll('#invest-growth-range .inv-range-btn').forEach(function (btn) {
     btn.classList.toggle('active', String(btn.getAttribute('data-range')) === String(range));
@@ -5101,7 +5411,7 @@ function renderInvestmentPage() {
     })
   });
 
-  // Asset mini cards (compact amounts so labels don't crush)
+
   function pesoCompact(n) {
     const v = Number(n) || 0;
     const abs = Math.abs(v);
@@ -5125,7 +5435,7 @@ function renderInvestmentPage() {
     }).join('');
   }
 
-  // Allocation bars — show all classes so the card feels complete
+
   const bars = document.getElementById('inv-alloc-bars');
   if (bars) {
     if (!useRows.length) {
@@ -5145,7 +5455,7 @@ function renderInvestmentPage() {
     }
   }
 
-  // Table
+
   const body = document.getElementById('investment-table-body');
   if (body) {
     const tableRows = filterInvestmentsByPeriod(all);
@@ -5181,7 +5491,7 @@ function renderInvestmentPage() {
     }
   }
 
-  // Footer widgets
+
   let topAsset = null;
   all.forEach(function (i) {
     const gp = Number(i.amount) > 0 ? (investGain(i) / Number(i.amount)) * 100 : 0;
@@ -5200,7 +5510,7 @@ function renderInvestmentPage() {
   const msFill = document.getElementById('inv-milestone-fill');
   if (msFill) msFill.style.width = msPct.toFixed(1) + '%';
 
-  // Investment goals (derived from portfolio milestones)
+
   const goalsList = document.getElementById('inv-goals-list');
   if (goalsList) {
     const defaults = [
@@ -5216,7 +5526,7 @@ function renderInvestmentPage() {
     }).join('');
   }
 
-  // Insights
+
   const insights = document.getElementById('inv-insights');
   if (insights) {
     const tips = [];
@@ -5342,7 +5652,7 @@ function renderProtectionPage() {
   setText('prot-monthly-cost', peso(monthlyCost));
   setText('prot-cost-pct', costPct.toFixed(1) + '% of monthly income');
 
-  // EF detail card
+
   setText('prot-ef-detail-status', ef.text.replace(/\s*\(.*/, '') || ef.text);
   setText('prot-ef-detail-copy', efMonths > 0
     ? ('Your emergency fund can cover ' + (efMonths >= 99 ? '6+' : efMonths.toFixed(1)) + ' months of your monthly expenses.')
@@ -5354,7 +5664,7 @@ function renderProtectionPage() {
   const efInsight = document.getElementById('prot-ef-insight');
   if (efInsight) efInsight.classList.toggle('is-warn', efMonths < 3);
 
-  // Checklist
+
   setText('prot-check-progress', coveredCount + '/' + totalTypes + ' completed');
   const list = document.getElementById('prot-checklist');
   if (list) {
@@ -5369,7 +5679,7 @@ function renderProtectionPage() {
     }).join('');
   }
 
-  // Recommendations
+
   const recs = document.getElementById('prot-recs');
   if (recs) {
     const tips = [];
@@ -5417,7 +5727,7 @@ function renderProtectionPage() {
     }).join('');
   }
 
-  // Overall status card
+
   const overallBadge = document.getElementById('prot-overall-badge');
   if (overallBadge) { overallBadge.textContent = sl.text; overallBadge.className = 'prot-badge ' + sl.cls; }
   setText('prot-overall-sub', score >= 80
@@ -5434,7 +5744,7 @@ function renderProtectionPage() {
       + '<li><i data-lucide="coins"></i> Monthly Cost: <strong>' + peso(monthlyCost) + '</strong></li>';
   }
 
-  // Policies table
+
   const body = document.getElementById('protection-table-body');
   if (body) {
     if (!rows.length) {
@@ -5461,7 +5771,7 @@ function renderProtectionPage() {
     }
   }
 
-  // Trend chart
+
   const range = state.protTrendRange || 12;
   document.querySelectorAll('#prot-trend-range .prot-range-btn').forEach(function (btn) {
     btn.classList.toggle('active', String(btn.getAttribute('data-range')) === String(range));
@@ -5513,7 +5823,7 @@ function renderProtectionPage() {
     })
   });
 
-  // Gauge doughnut
+
   destroyChart('protGauge');
   ensureChart('protGauge', 'protGaugeChart', {
     type: 'doughnut',
@@ -5633,7 +5943,7 @@ function confirmProtectionDelete() {
   renderApp();
 }
 
-/** @deprecated use renderProtectionPage */
+
 function renderProtectionPanel() {
   renderProtectionPage();
 }
@@ -5672,7 +5982,7 @@ function renderCalculator() {
   const p = pillarScores();
   const hs = healthScore();
 
-  // Exact formulas from Calculator spec (image 3)
+
   const savingsRate = income > 0 ? (savings / income) * 100 : 0;
   const spendingRatio = income > 0 ? (spending / income) * 100 : 0;
   const disposable = income - spending;
@@ -5810,7 +6120,7 @@ function renderCalculator() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-/* ---------- Charts ---------- */
+
 function chartDefaults() {
   const dark = document.body.getAttribute('data-mode') === 'dark';
   const tick = dark ? '#e8eef2' : '#6b7785';
@@ -5846,8 +6156,8 @@ function softColors() {
 
 function allocationRingData() {
   const t = totals();
-  // Protection coverage ₱ is insurance face value — not comparable to income/spend.
-  // Use monthly premiums so the rings stay meaningful.
+
+
   const protMonthly = (state.protection || []).reduce(function (a, p) {
     return a + (Number(p.monthly) || 0);
   }, 0);
@@ -5862,7 +6172,7 @@ function allocationRingData() {
   if (!hasFinancialData()) {
     return rings.map(function (r) { return Object.assign({}, r, { pct: 0 }); });
   }
-  // Scale each ring vs the largest cash bucket (progress arcs, not a pie)
+
   const peak = Math.max.apply(null, rings.map(function (r) { return Number(r.amount) || 0; }).concat([1]));
   return rings.map(function (r) {
     return Object.assign({}, r, {
@@ -5895,7 +6205,7 @@ let _allocHoverIndex = -1;
 let _allocHitMap = [];
 let _allocPointerBound = false;
 
-/** Clean Apple-Watch-style concentric progress rings (custom canvas). */
+
 function drawAllocationRadial(rings, hoverIndex) {
   const canvas = document.getElementById('allocationChart');
   if (!canvas) return;
@@ -5953,11 +6263,11 @@ function drawAllocationRadial(rings, hoverIndex) {
     }
   });
 
-  // Center: one percentage only (on hover), colored by active ring
+
   if (hoverIndex >= 0 && rings[hoverIndex]) {
     const r = rings[hoverIndex];
     const pctText = r.pct + '%';
-    // Fit inside innermost ring hole with comfortable padding
+
     const innerHole = Math.max(28, outerR - (rings.length - 1) * (stroke + gap) - stroke);
     const fontSize = Math.max(14, Math.min(22, Math.round(innerHole * 0.42)));
     ctx.save();
@@ -6531,7 +6841,7 @@ function updateCharts() {
     })
   });
 
-  // Page-owned chart renderers
+
   if (state.currentView === 'income') renderIncomePage();
   if (state.currentView === 'spending') renderSpendingPage();
   if (state.currentView === 'savings') renderSavingsPage();
@@ -6540,14 +6850,14 @@ function updateCharts() {
   if (state.currentView === 'analytics') renderAnalyticsPage();
 }
 
-/* ---------- UX helpers ---------- */
+
 function animateNumber(element, target, prefix, suffix, duration) {
   if (!element) return;
   prefix = prefix == null ? '₱' : prefix;
   suffix = suffix || '';
   duration = duration || 700;
   const formatted = prefix + Number(target || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
-  // Silent sync / unchanged value — no counting animation
+
   if (state._silentRender || element.textContent === formatted) {
     element.textContent = formatted;
     return;
@@ -6603,7 +6913,7 @@ function showToast(message, color) {
   }, 3000);
 }
 
-/* ---------- Boot ---------- */
+
 document.addEventListener('DOMContentLoaded', function () {
   const registerPass = document.getElementById('register-password');
   const registerConfirm = document.getElementById('register-confirm-password');
@@ -6641,6 +6951,33 @@ document.addEventListener('DOMContentLoaded', function () {
   if (registerPass) registerPass.addEventListener('input', syncPassUI);
   if (registerConfirm) registerConfirm.addEventListener('input', syncPassUI);
 
+  (function bindSuggestedMonthlySavings() {
+    const amountEl = document.getElementById('savings-modal-amount');
+    const targetEl = document.getElementById('savings-modal-target');
+    const dueEl = document.getElementById('savings-modal-due');
+    const monthlyEl = document.getElementById('savings-modal-monthly');
+    function onGoalInputs() {
+      updateSuggestedMonthlySavings();
+    }
+    if (amountEl) amountEl.addEventListener('input', onGoalInputs);
+    if (targetEl) targetEl.addEventListener('input', onGoalInputs);
+    if (dueEl) {
+      dueEl.addEventListener('input', onGoalInputs);
+      dueEl.addEventListener('change', onGoalInputs);
+    }
+    if (monthlyEl) {
+      monthlyEl.addEventListener('input', function () {
+        if (!String(monthlyEl.value || '').trim()) {
+          savingsMonthlyManual = false;
+          updateSuggestedMonthlySavings({ force: true });
+          return;
+        }
+        savingsMonthlyManual = true;
+        updateSuggestedMonthlySavings({ force: false });
+      });
+    }
+  })();
+
   applySeasonalAccent();
   const savedTheme = getStoredTheme();
   document.documentElement.setAttribute('data-theme', savedTheme);
@@ -6668,7 +7005,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function ftScheduleFocusSync() {
     if (_ftFocusSyncTimer) clearTimeout(_ftFocusSyncTimer);
     _ftFocusSyncTimer = setTimeout(function () {
-      refreshFinanceFromCloud().catch(function () { /* ignore */ });
+      refreshFinanceFromCloud().catch(function () {  });
     }, 400);
   }
   document.addEventListener('visibilitychange', function () {
