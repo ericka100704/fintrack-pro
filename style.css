@@ -7677,6 +7677,66 @@ body[data-mode="dark"] .calculator-period-select {
 .settings-pass-btn i { width: 0.95rem; height: 0.95rem; }
 .settings-pass-btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
 
+.settings-card-ico.is-danger {
+  background: rgba(196, 92, 92, 0.14);
+  color: #b44a4a;
+}
+.settings-danger-copy {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: #7a868f;
+}
+.settings-danger-card {
+  align-self: start;
+  gap: 0.65rem;
+  padding: 0.95rem 1rem;
+}
+.settings-danger-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.1rem;
+}
+.settings-danger-btn {
+  width: 100%; border: 1px solid rgba(196, 92, 92, 0.28); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.62rem 0.9rem; border-radius: 0.85rem;
+  font-size: 0.78rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #c45c5c 0%, #a63f3f 100%);
+  box-shadow: 0 8px 18px rgba(168, 63, 63, 0.18);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.settings-danger-btn i { width: 0.9rem; height: 0.9rem; }
+.settings-danger-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.settings-restore-btn {
+  width: 100%; border: 1.5px solid color-mix(in srgb, var(--theme-primary) 45%, transparent); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.62rem 0.9rem; border-radius: 0.85rem;
+  font-size: 0.78rem; font-weight: 800; color: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary-light) 35%, white);
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+.settings-restore-btn i { width: 0.9rem; height: 0.9rem; }
+.settings-restore-btn:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--theme-primary-light) 55%, white);
+}
+.confirm-btn-danger {
+  background: linear-gradient(135deg, #c45c5c 0%, #a63f3f 100%) !important;
+  box-shadow: 0 10px 22px rgba(168, 63, 63, 0.28) !important;
+}
+body[data-mode="dark"] .settings-danger-copy { color: #A9B7C6; }
+body[data-mode="dark"] .settings-danger-btn {
+  border-color: rgba(196, 92, 92, 0.4);
+}
+body[data-mode="dark"] .settings-restore-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #F7F1E0;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
 .settings-support-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .settings-support-list a,
 .settings-support-static {

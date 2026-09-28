@@ -2587,6 +2587,31 @@
         </article>
 
 
+        <article class="settings-card settings-danger-card">
+          <div class="settings-card-head">
+            <div class="settings-card-title-wrap">
+              <span class="settings-card-ico is-danger"><i data-lucide="trash-2"></i></span>
+              <div>
+                <h3 id="settings-clear-title">Clear All Data</h3>
+                <p id="settings-clear-sub">Wipe income, spending, savings, and more — or restore after.</p>
+              </div>
+            </div>
+          </div>
+          <p class="settings-danger-copy" id="settings-clear-copy">Removes all financial records. Login and theme stay. A backup is saved so you can restore.</p>
+          <div class="settings-danger-actions">
+            <button type="button" id="settings-clear-data-btn" class="settings-danger-btn" onclick="promptClearAllData()">
+              <i data-lucide="trash-2"></i> Clear All Data
+            </button>
+            <button type="button" id="settings-permanent-delete-btn" class="settings-danger-btn" style="display:none;" onclick="promptPermanentlyDeleteClearedData()">
+              <i data-lucide="trash-2"></i> Permanently Delete All Data
+            </button>
+            <button type="button" id="settings-restore-data-btn" class="settings-restore-btn" style="display:none;" onclick="promptRestoreClearedData()">
+              <i data-lucide="rotate-ccw"></i> Restore Cleared Data
+            </button>
+          </div>
+        </article>
+
+
         <article class="settings-card">
           <div class="settings-card-head">
             <div class="settings-card-title-wrap">

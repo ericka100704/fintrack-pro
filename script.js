@@ -203,6 +203,8 @@ const ACCOUNT_SYSTEM = {
     if (remoteTs > localTs) return true;
 
     if (this.accountDataIsEmpty(localUser.data) && !this.accountDataIsEmpty(remoteRow.data)) {
+      // Intentional Clear All Data: keep local empty and let it win over older cloud rows.
+      if (localUser.intentionalClearAt && localTs >= remoteTs) return false;
       return true;
     }
     return false;
@@ -265,6 +267,7 @@ const ACCOUNT_SYSTEM = {
       password: user.password || '',
       created: user.created || '',
       updatedAt: user.updatedAt || user.created || new Date().toISOString(),
+      intentionalClearAt: user.intentionalClearAt || '',
       data: user.data || this.emptyData()
     };
   },
@@ -286,6 +289,7 @@ const ACCOUNT_SYSTEM = {
         password: row.password || '',
         created: row.created || '',
         updatedAt: row.updatedAt || row.updated_at || row.created || '',
+        intentionalClearAt: row.intentionalClearAt || '',
         data: row.data || this.emptyData()
       };
     });
@@ -364,26 +368,28 @@ const ACCOUNT_SYSTEM = {
       if (this._cloudSyncing === run) this._cloudSyncing = null;
     }
   },
-  scheduleCloudPush(username) {
+  scheduleCloudPush(username, opts) {
     if (!username) return;
     if (!ftSupabaseReady()) return;
     clearTimeout(this._cloudPushTimer);
     const self = this;
+    const pushOpts = Object.assign({ force: true }, opts || {});
 
     this._cloudPushTimer = setTimeout(function () {
-      self.pushUserToCloud(username, { force: true });
+      self.pushUserToCloud(username, pushOpts);
     }, 120);
   },
-  flushCloudPush(username) {
+  flushCloudPush(username, opts) {
     if (!username || !ftSupabaseReady()) return Promise.resolve(false);
     clearTimeout(this._cloudPushTimer);
     this._cloudPushTimer = null;
-    return this.pushUserToCloud(username, { force: true });
+    return this.pushUserToCloud(username, Object.assign({ force: true }, opts || {}));
   },
 
   async pushUserToCloud(username, opts) {
     opts = opts || {};
     const force = !!opts.force;
+    const allowEmpty = !!opts.allowEmpty;
     const users = this.getUsers();
     const user = users[username];
     if (!user) return false;
@@ -399,15 +405,19 @@ const ACCOUNT_SYSTEM = {
             this.saveCloudIds(ids);
           }
           const localNow = this.getUsers()[username] || user;
-          if (!force || this.shouldPreferRemoteUser(localNow, remote)) {
-            if (this.shouldPreferRemoteUser(localNow, remote)) {
+          const preferRemote = this.shouldPreferRemoteUser(localNow, remote);
+          if (!force || preferRemote) {
+            if (preferRemote) {
               this.applyCloudList([remote]);
               this._lastCloudError = null;
               return 'remote';
             }
           }
 
-          if (this.accountDataIsEmpty(localNow.data) && !this.accountDataIsEmpty(remote.data)) {
+          const intentionalEmpty = allowEmpty || !!(localNow && localNow.intentionalClearAt);
+          if (!intentionalEmpty
+              && this.accountDataIsEmpty(localNow.data)
+              && !this.accountDataIsEmpty(remote.data)) {
             this.applyCloudList([remote]);
             this._lastCloudError = null;
             return 'remote';
@@ -693,14 +703,22 @@ const ACCOUNT_SYSTEM = {
     const user = this.getUsers()[username];
     return user ? user.data : null;
   },
-  saveUserData(username, data) {
+  saveUserData(username, data, opts) {
+    opts = opts || {};
     const users = this.getUsers();
     if (!users[username]) return false;
     users[username].data = data;
+    if (!this.accountDataIsEmpty(data)) {
+      delete users[username].intentionalClearAt;
+    } else if (opts.intentionalClear) {
+      users[username].intentionalClearAt = new Date().toISOString();
+    }
     this.touchUser(users[username]);
     this.saveUsers(users);
 
-    this.flushCloudPush(username);
+    this.flushCloudPush(username, {
+      allowEmpty: !!(opts.intentionalClear || users[username].intentionalClearAt)
+    });
     return true;
   },
   getSampleData() {
@@ -1973,9 +1991,19 @@ function handleSocialLogin(provider) {
   showToast(provider.charAt(0).toUpperCase() + provider.slice(1) + ' login coming soon!', 'info');
 }
 
-function showConfirmModal(title, message, onConfirm) {
+function showConfirmModal(title, message, onConfirm, opts) {
+  opts = opts || {};
   document.getElementById('confirm-modal-title').textContent = title;
   document.getElementById('confirm-modal-message').textContent = message;
+  const iconEl = document.getElementById('confirm-modal-icon');
+  if (iconEl) {
+    iconEl.setAttribute('data-lucide', opts.icon || 'log-out');
+  }
+  const confirmBtn = document.querySelector('#confirm-modal .theme-btn-primary');
+  if (confirmBtn) {
+    confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+    confirmBtn.classList.toggle('confirm-btn-danger', !!opts.danger);
+  }
   confirmModalCallback = onConfirm;
   document.getElementById('confirm-modal').style.display = 'flex';
   lockBodyScroll();
@@ -1984,9 +2012,168 @@ function showConfirmModal(title, message, onConfirm) {
 function closeConfirmModal(confirmed) {
   document.getElementById('confirm-modal').style.display = 'none';
   unlockBodyScrollIfIdle();
+  const confirmBtn = document.querySelector('#confirm-modal .theme-btn-primary');
+  if (confirmBtn) {
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.classList.remove('confirm-btn-danger');
+  }
+  const iconEl = document.getElementById('confirm-modal-icon');
+  if (iconEl) iconEl.setAttribute('data-lucide', 'log-out');
   const cb = confirmModalCallback;
   confirmModalCallback = null;
   if (confirmed && cb) cb();
+}
+
+function clearDataBackupKey(username) {
+  return 'fintrack_clear_backup_' + username;
+}
+
+function hasClearDataBackup(username) {
+  if (!username) return false;
+  try {
+    const raw = localStorage.getItem(clearDataBackupKey(username));
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return !!(parsed && !isFinanceDataEmpty(parsed));
+  } catch (e) {
+    return false;
+  }
+}
+
+function updateClearDataRestoreUI() {
+  const clearBtn = document.getElementById('settings-clear-data-btn');
+  const permanentBtn = document.getElementById('settings-permanent-delete-btn');
+  const restoreBtn = document.getElementById('settings-restore-data-btn');
+  const titleEl = document.getElementById('settings-clear-title');
+  const subEl = document.getElementById('settings-clear-sub');
+  const copyEl = document.getElementById('settings-clear-copy');
+  const user = ACCOUNT_SYSTEM.getCurrentUser();
+  const hasBackup = !!(user && hasClearDataBackup(user.username));
+  const hasFinanceData = !isFinanceDataEmpty(snapshotFinanceData());
+  // Only show restore/permanent after a clear (empty account + backup waiting).
+  // If data is back (restore or new entries), show Clear All Data again.
+  const showClearedActions = hasBackup && !hasFinanceData;
+
+  if (clearBtn) clearBtn.style.display = showClearedActions ? 'none' : 'inline-flex';
+  if (permanentBtn) permanentBtn.style.display = showClearedActions ? 'inline-flex' : 'none';
+  if (restoreBtn) restoreBtn.style.display = showClearedActions ? 'inline-flex' : 'none';
+
+  if (showClearedActions) {
+    if (titleEl) titleEl.textContent = 'Cleared Data';
+    if (subEl) subEl.textContent = 'Restore your backup, or permanently delete it forever.';
+    if (copyEl) {
+      copyEl.textContent = 'Backup is ready. Restore brings everything back. Permanently delete removes it forever.';
+    }
+  } else {
+    if (titleEl) titleEl.textContent = 'Clear All Data';
+    if (subEl) subEl.textContent = 'Wipe income, spending, savings, and more — or restore after.';
+    if (copyEl) {
+      copyEl.textContent = 'Removes all financial records. Login and theme stay. A backup is saved so you can restore.';
+    }
+  }
+  lucide.createIcons();
+}
+
+function promptClearAllData() {
+  const user = ACCOUNT_SYSTEM.getCurrentUser();
+  if (!user) { showToast('Please sign in first!', 'rose'); return; }
+  if (isFinanceDataEmpty(snapshotFinanceData())) {
+    showToast('No financial data to clear', 'info');
+    return;
+  }
+  showConfirmModal(
+    'Clear All Data?',
+    'This will delete ALL income, spending, savings, investments, and protection records. A backup will be saved so you can restore later from Settings.',
+    function () {
+      try {
+        localStorage.setItem(clearDataBackupKey(user.username), JSON.stringify(snapshotFinanceData()));
+      } catch (e) {
+        showToast('Could not save backup. Clear cancelled.', 'rose');
+        return;
+      }
+      state.income = [];
+      state.expenses = [];
+      state.savings = [];
+      state.investments = [];
+      state.protection = [];
+      state.goals = [];
+      state.notificationsLog = [];
+      state.readNotificationKeys = [];
+      state.sampleMode = false;
+      localStorage.removeItem(sampleFlagKey(user.username));
+      localStorage.removeItem(sampleBackupKey(user.username));
+      localStorage.removeItem(sampleBackupMetaKey(user.username));
+      saveUserData({ intentionalClear: true });
+      renderApp();
+      updateSampleButton();
+      updateClearDataRestoreUI();
+      showToast('Data cleared — choose Restore or Permanently Delete', 'success');
+    },
+    { icon: 'trash-2', confirmLabel: 'Delete Everything', danger: true }
+  );
+}
+
+function promptPermanentlyDeleteClearedData() {
+  const user = ACCOUNT_SYSTEM.getCurrentUser();
+  if (!user) { showToast('Please sign in first!', 'rose'); return; }
+  if (!hasClearDataBackup(user.username)) {
+    showToast('No backup left to delete', 'info');
+    updateClearDataRestoreUI();
+    return;
+  }
+  showConfirmModal(
+    'Permanently Delete?',
+    'This removes your Clear All Data backup forever. You will NOT be able to restore income, spending, savings, or other cleared records.',
+    function () {
+      localStorage.removeItem(clearDataBackupKey(user.username));
+      updateClearDataRestoreUI();
+      showToast('Backup permanently deleted — cannot be restored', 'success');
+    },
+    { icon: 'trash-2', confirmLabel: 'Permanently Delete', danger: true }
+  );
+}
+
+function promptRestoreClearedData() {
+  const user = ACCOUNT_SYSTEM.getCurrentUser();
+  if (!user) { showToast('Please sign in first!', 'rose'); return; }
+  if (!hasClearDataBackup(user.username)) {
+    showToast('No cleared data to restore', 'info');
+    updateClearDataRestoreUI();
+    return;
+  }
+  showConfirmModal(
+    'Restore Cleared Data?',
+    'Bring back the income, spending, savings, and other records from your last Clear All Data backup? Current empty/new entries will be replaced.',
+    function () {
+      let restore = null;
+      try {
+        restore = ensureMigratedData(JSON.parse(localStorage.getItem(clearDataBackupKey(user.username))));
+      } catch (e) {
+        restore = null;
+      }
+      if (!restore || isFinanceDataEmpty(restore)) {
+        localStorage.removeItem(clearDataBackupKey(user.username));
+        updateClearDataRestoreUI();
+        showToast('Backup is empty or invalid', 'rose');
+        return;
+      }
+      applyFinanceData(restore, true);
+      state.sampleMode = false;
+      localStorage.removeItem(sampleFlagKey(user.username));
+      localStorage.removeItem(clearDataBackupKey(user.username));
+      const users = ACCOUNT_SYSTEM.getUsers();
+      if (users[user.username]) {
+        delete users[user.username].intentionalClearAt;
+        ACCOUNT_SYSTEM.saveUsers(users);
+      }
+      saveUserData();
+      renderApp();
+      updateSampleButton();
+      updateClearDataRestoreUI();
+      showToast('Cleared data restored', 'success');
+    },
+    { icon: 'rotate-ccw', confirmLabel: 'Restore Data' }
+  );
 }
 
 function handleLogout() {
@@ -2088,7 +2275,7 @@ function loadUserData(username, opts) {
   }
 }
 
-function saveUserData() {
+function saveUserData(opts) {
   const user = ACCOUNT_SYSTEM.getCurrentUser();
   if (!user) return;
   ACCOUNT_SYSTEM.saveUserData(user.username, {
@@ -2101,7 +2288,7 @@ function saveUserData() {
     settings: state.settings,
     notificationsLog: state.notificationsLog,
     readNotificationKeys: state.readNotificationKeys || []
-  });
+  }, opts || {});
 }
 
 
@@ -2754,6 +2941,7 @@ function populateSettingsUI() {
   const seasonSelect = document.getElementById('seasonal-accent-select');
   if (seasonSelect) seasonSelect.value = getSeasonalMode();
   updateUserUI();
+  updateClearDataRestoreUI();
 }
 
 
